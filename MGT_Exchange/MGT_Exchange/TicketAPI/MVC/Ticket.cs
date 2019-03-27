@@ -18,7 +18,7 @@ namespace MGT_Exchange.TicketAPI.MVC
         public string Name { get; set; }
         
         // 1 to Many - Steven Sandersons
-        public virtual List<CommentTicket> comments { get; set; }
+        public virtual List<CommentTicket> Comments { get; set; }
 
     }
 
