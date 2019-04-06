@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using MGT_Exchange.TicketAPI.MVC;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using MGT_Exchange.ChatAPI.MVC;
+using MGT_Exchange.AuthAPI.MVC;
 
 namespace MGT_Exchange.Models
 {
@@ -15,8 +17,8 @@ namespace MGT_Exchange.Models
         public MVCDbContext (DbContextOptions<MVCDbContext> options)
             : base(options)
         {
-            /*
-            Database.EnsureDeleted();
+            
+             /*Database.EnsureDeleted();
             _created = false; // */
 
             if (!_created)
@@ -53,8 +55,67 @@ namespace MGT_Exchange.Models
             }
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            //base.OnModelCreating(modelBuilder);
+
+            /*
+
+            modelBuilder.Entity<Posts>()
+          .HasOne(p => p.User)
+          .WithMany(c => c.Posts)
+          .HasForeignKey(p => p.UserId);
+
+      modelBuilder.Entity<Attachment>()
+        .HasOne(p => p.Posts)
+        .WithMany(c => c.Attachment);
+            */
+
+            /* fix foreign keys
+            modelBuilder.Entity<Comment>()
+                        .HasOne(c => c.User)
+                        .WithOne()
+                        .HasForeignKey<UserApp>(q => q.UserAppId).OnDelete(DeleteBehavior.Restrict)
+                        ;
+
+            modelBuilder.Entity<Participant>()
+                        .HasOne(c => c.User)
+                        .WithOne()
+                        .HasForeignKey<UserApp>(q => q.UserAppId).OnDelete(DeleteBehavior.Restrict)
+                        ;
+            
+            modelBuilder.Entity<Chat>()
+                        .HasOne(c => c.CreatedBy)
+                        .WithOne()
+                        .HasForeignKey<UserApp>(q => q.UserAppId).OnDelete(DeleteBehavior.Restrict)
+                        ;
+
+
+            /*
+            modelBuilder.Entity<Comment>()                
+                .HasOne(a => a.UserApp)
+                .WithOne(b => b.Author)
+                .HasForeignKey<user>(b => b.AuthorRef).OnDelete(do;
+                */
+        }
+
+        /*
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            modelBuilder.Conventions.Remove<System.Data.Entity.ModelConfiguration.Conventions.OneToManyCascadeDeleteConvention>();
+        }
+        */
+
         public DbSet<MGT_Exchange.TicketAPI.MVC.Ticket> Ticket { get; set; }
 
         public DbSet<MGT_Exchange.TicketAPI.MVC.CommentTicket> CommentTicket { get; set; }
+
+        public DbSet<MGT_Exchange.ChatAPI.MVC.Chat> Chat { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.ChatKind> ChatKind { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.ChatStatus> ChatStatus { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.Comment> Comment { get; set; }        
+        public DbSet<MGT_Exchange.ChatAPI.MVC.Participant> Participant { get; set; }
+        public DbSet<MGT_Exchange.AuthAPI.MVC.UserApp> UserApp { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.Company> Company { get; set; }
     }
 }

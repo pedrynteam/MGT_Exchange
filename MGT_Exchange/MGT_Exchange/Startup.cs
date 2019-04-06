@@ -61,7 +61,7 @@ namespace MGT_Exchange
                 // c.RegisterAuthorizeDirectiveType();
 
                 c.RegisterQueryType<GraphQLActions.GraphQLQueryType>();
-                //c.RegisterMutationType<GraphQLActions.GraphQLMutationType>();
+                c.RegisterMutationType<GraphQLActions.GraphQLMutationType>();
                 //c.RegisterSubscriptionType<GraphQLActions.GraphQLSubscriptionType>();
 
             }));

@@ -1,0 +1,276 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using HotChocolate.Types;
+using MGT_Exchange.GraphQLActions.Resources;
+using MGT_Exchange.ChatAPI.MVC;
+using MGT_Exchange.Models;
+using MGT_Exchange.ChatAPI.GraphQL;
+using Microsoft.EntityFrameworkCore;
+
+namespace MGT_Exchange.ChatAPI.Transactions
+{    
+    // 1. Create Model: Input type is used for Mutation, it should be included if needed
+    public class AddCommentToChatTxn_Input
+    {
+        public Comment Comment { get; set; }
+    }
+
+    public class AddCommentToChatTxn_InputType : InputObjectType<AddCommentToChatTxn_Input>
+    {
+        protected override void Configure(IInputObjectTypeDescriptor<AddCommentToChatTxn_Input> descriptor)
+        {
+            descriptor.Field(t => t.Comment)
+                .Type<CommentInputType>();
+        }
+    }
+
+    // 2. Create Model: Output type is used for Mutation, it should be included if needed
+    public class AddCommentToChatTxn_Output
+    {
+        public ResultConfirmation ResultConfirmation { get; set; }
+        public Comment Comment { get; set; }
+    }
+
+    public class AddCommentToChatTxn_OutputType : ObjectType<AddCommentToChatTxn_Output>
+    {
+
+    }
+
+    // 4. Transaction - Logic Controller
+    public class AddCommentToChatTxn
+    {
+
+        public AddCommentToChatTxn()
+        {
+        }
+
+        public async Task<AddCommentToChatTxn_Output> Execute(AddCommentToChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true)
+        {
+            AddCommentToChatTxn_Output output = new AddCommentToChatTxn_Output();
+            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+
+            // Error handling
+            bool error = false; // To Handle Only One Error
+
+            try
+            {
+                MVCDbContext contextMGT = (contextFather != null) ? contextFather : new MVCDbContext();
+                // An using statement is in reality a try -> finally statement, disposing the element in the finally. So we need to take advance of that to create a DBContext inheritance                
+                try
+                {
+                    // DBContext by convention is a UnitOfWork, track changes and commits when SaveChanges is called
+                    // Multithreading issue: so if we use only one DBContext, it will track all entities (_context.Customer.Add) and commit them when SaveChanges is called, 
+                    // No Matter what transactions or client calls SaveChanges.
+                    // Note: Rollback will not remove the entities from the tracker in the context. so better dispose it.
+
+                    //***** 0. Make The Validations - Be careful : Concurrency. Same name can be saved multiple times if called at the exact same time. Better have an alternate database constraint
+
+                    // Call database to validate ChatId and UserId existance or just try to execute the query and if it fails is because one of those is wrong
+                    /*
+                    Chat chatDb = await contextMGT.Chat.Where(x => x.ChatId == input.Comment.ChatId).FirstOrDefaultAsync();
+
+                    if (chatDb == null)
+                    {
+                        error = true;
+                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "CHAT_DOES_NOT_EXIST_ERROR", _ResultDetail: "");
+                    }
+                    */
+
+                    // Call Database to validate that: 1. ChatId exists 2. User Exists 3. User is part of the Company 4. User is Participant of the Chat
+
+                    Chat chatDb = await contextMGT.Chat.Include(o => o.Participants)
+                        .Where(x => x.ChatId == input.Comment.ChatId)
+                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.Comment.UserAppId)))
+                        .FirstOrDefaultAsync();
+                        
+                        //.Where(x => x.ChatId == input.Comment.ChatId)
+                       ; // 1. ChatId exists
+
+                    if (chatDb == null)
+                    {
+                        error = true;
+                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED");
+                    }
+
+                    if (!error)
+                    {
+                        //***** 1. Create the Comment (Atomic because is same Context DB)
+
+                        // Create the Chat To Save
+                        input.Comment.CommentId = 0;
+                        input.Comment.Created = DateTime.UtcNow;
+
+                        // Save the chat to the context
+                        contextMGT.Comment.Add(input.Comment);
+
+                        //***** 4. Save and Commit to the Database (Atomic because is same Context DB) 
+                        if (!error && autoCommit)
+                        {
+                            await contextMGT.SaveChangesAsync(); // Call it only once so do all other operations first
+                        }
+
+                        //***** 5. Execute Send e-mails or other events once the database has been succesfully saved
+                        //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
+
+                        //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
+                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMMENT_SUCESSFULLY_CREATED"); // If OK                        
+                        output.Comment = input.Comment;
+                    }// if (!error)
+                }
+                finally
+                {
+                    // If the context Father is null the context was created on his own, so dispose it
+                    if (contextMGT != null && contextFather == null)
+                    {
+                        contextMGT.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex) // Main try 
+            {
+                System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
+                string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
+                System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
+                output = new AddCommentToChatTxn_Output(); // Restart variable to avoid returning any already saved data
+                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+            }
+            finally
+            {
+                // Save Logs if needed
+            }
+
+            return output;
+        }
+    }
+
+}
+
+
+/*****
+    // 1. Create Model: Input type is used for Mutation, it should be included if needed
+    public class AddCommentToChatTxn_Input
+    {
+        public Chat Chat { get; set; }
+    }
+
+    public class AddCommentToChatTxn_InputType : InputObjectType<AddCommentToChatTxn_Input>
+    {
+        protected override void Configure(IInputObjectTypeDescriptor<AddCommentToChatTxn_Input> descriptor)
+        {
+            descriptor.Field(t => t.Chat)
+                .Type<ChatInputType>();
+        }
+    }
+
+    // 2. Create Model: Output type is used for Mutation, it should be included if needed
+    public class AddCommentToChatTxn_Output
+    {
+        public ResultConfirmation ResultConfirmation { get; set; }
+        public Chat Chat { get; set; }
+    }
+
+    public class AddCommentToChatTxn_OutputType : ObjectType<AddCommentToChatTxn_Output>
+    {
+
+    }
+
+    // 4. Transaction - Logic Controller
+    public class AddCommentToChatTxn
+    {
+
+        public AddCommentToChatTxn()
+        {
+        }
+
+        public async Task<AddCommentToChatTxn_Output> Execute(AddCommentToChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true)
+        {
+            AddCommentToChatTxn_Output output = new AddCommentToChatTxn_Output();
+            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+
+            // Error handling
+            bool error = false; // To Handle Only One Error
+
+            try
+            {
+                MVCDbContext contextMGT = (contextFather != null) ? contextFather : new MVCDbContext();
+                // An using statement is in reality a try -> finally statement, disposing the element in the finally. So we need to take advance of that to create a DBContext inheritance                
+                try
+                {
+                    // DBContext by convention is a UnitOfWork, track changes and commits when SaveChanges is called
+                    // Multithreading issue: so if we use only one DBContext, it will track all entities (_context.Customer.Add) and commit them when SaveChanges is called, 
+                    // No Matter what transactions or client calls SaveChanges.
+                    // Note: Rollback will not remove the entities from the tracker in the context. so better dispose it.
+
+                    //***** 0. Make The Validations - Be careful : Concurrency. Same name can be saved multiple times if called at the exact same time. Better have an alternate database constraint
+
+                    
+                    /*
+                    if (!result.Succeeded)
+                    {
+                        error = true;
+                        _output.resultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "Chat_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
+                        List<ItemKey> resultKeys = new List<ItemKey>();
+
+                        foreach (var errorDesc in result.Errors)
+                        {
+                            resultKeys.Add(new ItemKey(errorDesc.Code, errorDesc.Description));
+                        }
+                        _output.resultConfirmation.ResultDictionary = resultKeys;
+                    }
+                    */
+/****
+                    if (!error)
+                    {
+                        //***** 1. Create the token (Atomic because is same Context DB)
+
+                        input.Chat.Created = DateTime.Now;                        
+
+                        contextMGT.Chat.Add(input.Chat);
+
+                        //***** 4. Save and Commit to the Database (Atomic because is same Context DB) 
+                        if (!error && autoCommit)
+                        {
+                            await contextMGT.SaveChangesAsync(); // Call it only once so do all other operations first
+                        }
+
+                        //***** 5. Execute Send e-mails or other events once the database has been succesfully saved
+                        //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
+
+                        //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
+                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_CREATED"); // If OK                        
+                        output.Chat = input.Chat;
+                    }// if (!error)
+                }
+                finally
+                {
+                    // If the context Father is null the context was created on his own, so dispose it
+                    if (contextMGT != null && contextFather == null)
+                    {
+                        contextMGT.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex) // Main try 
+            {
+                System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
+                string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
+                System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
+                output = new AddCommentToChatTxn_Output(); // Restart variable to avoid returning any already saved data
+                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+            }
+            finally
+            {
+                // Save Logs if needed
+            }
+
+            return output;
+        }
+
+    }
+
+
+
+
+}
+*/

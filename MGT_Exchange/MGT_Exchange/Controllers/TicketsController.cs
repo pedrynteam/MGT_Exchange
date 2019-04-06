@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MGT_Exchange.Models;
 using MGT_Exchange.TicketAPI.MVC;
+using MGT_Exchange.ChatAPI.MVC;
+using MGT_Exchange.AuthAPI.MVC;
 
 namespace MGT_Exchange.Controllers
 {
@@ -22,6 +24,43 @@ namespace MGT_Exchange.Controllers
         // GET: Tickets
         public async Task<IActionResult> Index()
         {
+
+
+            // Create Chat conversation
+            /*
+            
+            Chat chat = new Chat { ChatId = 0, Name = "Chat 2" };
+
+            UserApp user = new UserApp { UserAppId = 0, Id = "third", Email = "yothird@here.com", PasswordHash = "Entrar82#" };
+
+            Participant participant = new Participant { ParticipantId = 0, ChatId = 2, UserAppId = 3, IsAdmin = true };
+
+            Comment comment = new Comment { CommentId = 0, ChatId = 2, UserAppId = 3, Message = "Comment 3 Chat 2"};
+
+            //_context.Chat.Add(chat);
+            //_context.UserApp.Add(user);
+            //_context.Participant.Add(participant);
+            _context.Comment.Add(comment);
+            */
+
+
+            
+
+            _context.ChatKind.Add(new ChatKind { ChatKindId = 0, Name = "Chat Room", Description="Chat Room" });
+            _context.ChatKind.Add(new ChatKind { ChatKindId = 0, Name = "Chat Notification", Description = "Chat Notification" });
+
+            _context.ChatStatus.Add(new ChatStatus { ChatStatusId = 0, Name = "OPEN", Description = "OPEN" });
+            _context.ChatStatus.Add(new ChatStatus { ChatStatusId = 0, Name = "CANCEL", Description = "CANCEL" });
+            _context.ChatStatus.Add(new ChatStatus { ChatStatusId = 0, Name = "RESOLVED", Description = "RESOLVED" });
+    
+
+            //_context.UserApp.Add(new UserApp { UserAppId = 0, UserName = "username" });
+
+            await _context.SaveChangesAsync();
+
+
+            
+
             return View(await _context.Ticket.ToListAsync());
         }
 
