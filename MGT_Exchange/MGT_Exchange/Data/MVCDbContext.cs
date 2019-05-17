@@ -117,5 +117,8 @@ namespace MGT_Exchange.Models
         public DbSet<MGT_Exchange.ChatAPI.MVC.Participant> Participant { get; set; }
         public DbSet<MGT_Exchange.AuthAPI.MVC.UserApp> UserApp { get; set; }
         public DbSet<MGT_Exchange.ChatAPI.MVC.Company> Company { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.CommentInfo> CommentInfo { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.Notification> Notification { get; set; }
+
     }
 }

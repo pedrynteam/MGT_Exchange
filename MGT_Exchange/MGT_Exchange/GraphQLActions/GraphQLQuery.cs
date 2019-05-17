@@ -30,6 +30,18 @@ namespace MGT_Exchange.GraphQLActions
             return await contextMVC.Company.Where(q => q.CompanyId.Equals(id)).FirstOrDefaultAsync();
         }
 
+        // Get Comment by id
+        public async Task<Comment> GetCommentAsync(int id)
+        {
+            return await contextMVC.Comment.Where(q => q.CommentId == id).FirstOrDefaultAsync();
+        }
+
+        // Get CommentInfo by id
+        public async Task<CommentInfo> GetCommentInfoAsync(int id)
+        {
+            return await contextMVC.CommentInfo.Where(q => q.CommentInfoId == id).FirstOrDefaultAsync();
+        }
+
         // Get a ticket by TicketId
         public async Task<Ticket> GetTicketAsync(int id)
         {
@@ -66,6 +78,65 @@ namespace MGT_Exchange.GraphQLActions
             return await contextMVC.Comment.ToListAsync();
         }
 
+        // Get Notifications by User
+        public async Task<List<Notification>> GetNotificationsByUserAsync(string toUserAppId, int take = 10)
+        {
+            List<Notification> notifications = new List<Notification>();
+
+            notifications = await contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).OrderBy(y => y.Seen).ThenByDescending(y => y.NotificationId).Take(take).ToListAsync();
+
+            /*
+            Notification notification = contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).FirstOrDefault();
+            notification.Seen = true;
+
+            contextMVC.Notification.Update(notification);
+            await contextMVC.SaveChangesAsync();
+            */
+
+            return notifications;
+        }
+
+        // Get Chats by User
+        public async Task<List<Chat>> GetChatsByUserAsync(string userAppId, int take = 10)
+        {
+            // List<Chat> chats = new List<Chat>();
+
+            /*
+            Chat chatDb = await contextMVC.Chat
+                        .Where(x => x.ChatId == input.Comment.ChatId)
+                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.Comment.UserAppId)))
+                        .Include(o => o.Participants)
+                        //.ThenInclude(i => i.User)                        
+                        .FirstOrDefaultAsync();
+                        */
+
+            List<Chat> chats = await contextMVC.Chat
+                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(userAppId)))
+                        .OrderByDescending(x => x.UpdatedAt)
+                        .Take(take)
+                        .ToListAsync();
+
+            return chats;
+
+            /*
+            var query = from user in contextMVC.Chat
+                        select user;
+                        
+
+
+            notifications = await contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).OrderBy(y => y.Seen).ThenByDescending(y => y.NotificationId).Take(take).ToListAsync();
+
+            /*
+            Notification notification = contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).FirstOrDefault();
+            notification.Seen = true;
+
+            contextMVC.Notification.Update(notification);
+            await contextMVC.SaveChangesAsync();
+            */
+
+            // return notifications;
+        }
+
     }// public class GraphQLQuery
 
     public class GraphQLQueryType : ObjectType<GraphQLQuery>
@@ -96,12 +167,25 @@ namespace MGT_Exchange.GraphQLActions
             //.Authorize(policy: "OnlyManagersDb") // This is using a policy
             ;
 
+            descriptor.Field(t => t.GetCommentAsync(default))
+                .Type<CommentType>()
+                .Argument("id", a => a.Type<NonNullType<IntType>>())
+                .Name("comment")
+            //.Directive(new AuthorizeDirective()) // This is like Authenticated only
+            //.Authorize(policy: "OnlyManagersDb") // This is using a policy
+            ;
+
             descriptor.Field(t => t.GetCommentsAsync())
                 .Type<ListType<CommentType>>()
                 .Name("comments")
             //.Directive(new AuthorizeDirective()) // This is like Authenticated only
             //.Authorize(policy: "OnlyManagersDb") // This is using a policy
             ;
+
+            descriptor.Field(t => t.GetCommentInfoAsync(default))
+                .Type<ListType<CommentInfoType>>()
+                .Argument("id", a => a.Type<NonNullType<IntType>>())
+                .Name("commentsInfo");
 
             descriptor.Field(t => t.GetParticipantsAsync())
                 .Type<ListType<ParticipantType>>()
@@ -123,6 +207,23 @@ namespace MGT_Exchange.GraphQLActions
             //.Directive(new AuthorizeDirective()) // This is like Authenticated only
 //.Authorize(policy: "OnlyManagersDb") // This is using a policy
 ;
+
+
+            descriptor.Field(t => t.GetNotificationsByUserAsync(default, default))
+                .Type<ListType<NotificationType>>()
+                .Argument("toUserAppId", a => a.Type<NonNullType<StringType>>())
+                .Argument("take", a => a.Type<IntType>())
+                .Name("notificationsByUser")
+                ;
+
+            descriptor.Field(t => t.GetChatsByUserAsync(default, default))
+                .Type<ListType<ChatType>>()
+                .Argument("userAppId", a => a.Type<NonNullType<StringType>>())
+                .Argument("take", a => a.Type<IntType>())
+                .Name("chatsByUser")
+                ;
+
+
 
         }
 

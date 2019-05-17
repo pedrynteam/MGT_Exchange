@@ -42,10 +42,40 @@ namespace MGT_Exchange.GraphQLActions
             return await createChatTxn.Execute(input: input);
         }
 
-        public async Task<AddCommentToChatTxn_Output> AddCommentToChatTxn(AddCommentToChatTxn_Input input)
+        public async Task<AddCommentToChatTxn_Output> AddCommentToChatTxn(AddCommentToChatTxn_Input input, [Service]IEventSender eventSender, [Service]IEventRegistry eventRegistry)
         {
             AddCommentToChatTxn addCommentToChatTxn = new AddCommentToChatTxn();
-            return await addCommentToChatTxn.Execute(input: input);
+            return await addCommentToChatTxn.Execute(input: input, eventSender: eventSender, eventRegistry: eventRegistry);
+        }
+
+        public async Task<AddCommentInfoToCommentTxn_Output> AddCommentInfoToCommentTxn(AddCommentInfoToCommentTxn_Input input, [Service]IEventSender eventSender)
+        {
+            AddCommentInfoToCommentTxn AddCommentInfoToCommentTxn = new AddCommentInfoToCommentTxn();
+            return await AddCommentInfoToCommentTxn.Execute(input: input, eventSender: eventSender);
+        }
+
+        public async Task<UserEntersChatTxn_Output> UserEntersChatTxn(UserEntersChatTxn_Input input, [Service]IEventSender eventSender)
+        {
+            UserEntersChatTxn UserEntersChatTxn = new UserEntersChatTxn();
+            return await UserEntersChatTxn.Execute(input: input, eventSender: eventSender);
+        }
+
+        public async Task<RetrieveMasterInformationByUser_Output> RetrieveMasterInformationByUser(RetrieveMasterInformationByUser_Input input, [Service]IEventSender eventSender)
+        {
+            RetrieveMasterInformationByUserTxn RetrieveMasterInformationByUser = new RetrieveMasterInformationByUserTxn();
+            return await RetrieveMasterInformationByUser.Execute(input: input, eventSender: eventSender);
+        }
+
+        public async Task<CreateMockChatsTxn_Output> CreateMockChatsTxn(CreateMockChatsTxn_Input input, [Service]IServiceProvider serviceProvider)
+        {
+            CreateMockChatsTxn createMockChatsTxn = new CreateMockChatsTxn();
+            return await createMockChatsTxn.Execute(input: input, serviceProvider: serviceProvider);
+        }
+
+        public async Task<LoadChatAndUpdateUnseenForUserTxn_Output> LoadChatAndUpdateUnseenForUserTxn(LoadChatAndUpdateUnseenForUserTxn_Input input, [Service]IEventSender eventSender)
+        {
+            LoadChatAndUpdateUnseenForUserTxn loadChatAndUpdateUnseenForUserTxn = new LoadChatAndUpdateUnseenForUserTxn();
+            return await loadChatAndUpdateUnseenForUserTxn.Execute(input: input, eventSender: eventSender);
         }
 
     }
@@ -99,11 +129,42 @@ namespace MGT_Exchange.GraphQLActions
                 .Description("Create Chat Room")    
                 ;
 
-            descriptor.Field(t => t.AddCommentToChatTxn(default))
+            descriptor.Field(t => t.AddCommentInfoToCommentTxn(default, default)) // From here the Injection works
+                            .Type<NonNullType<AddCommentInfoToCommentTxn_OutputType>>()
+                            .Argument("input", a => a.Type<NonNullType<AddCommentInfoToCommentTxn_InputType>>())
+                            .Description("Create CommentInfo to Comment")
+                            ;
+
+            descriptor.Field(t => t.AddCommentToChatTxn(default, default, default)) // From here the Injection works
                 .Type<NonNullType<AddCommentToChatTxn_OutputType>>()
                 .Argument("input", a => a.Type<NonNullType<AddCommentToChatTxn_InputType>>())
                 .Description("Create Comment to Chat")
                 ;
+
+            descriptor.Field(t => t.UserEntersChatTxn(default, default)) // From here the Injection works
+                .Type<NonNullType<UserEntersChatTxn_OutputType>>()
+                .Argument("input", a => a.Type<NonNullType<UserEntersChatTxn_InputType>>())
+                .Description("User Enters Chat")
+                ;
+
+            descriptor.Field(t => t.RetrieveMasterInformationByUser(default, default)) // From here the Injection works
+                .Type<NonNullType<RetrieveMasterInformationByUser_OutputType>>()
+                .Argument("input", a => a.Type<NonNullType<RetrieveMasterInformationByUser_InputType>>())
+                .Description("Get Master Information By User")
+                ;
+
+            descriptor.Field(t => t.LoadChatAndUpdateUnseenForUserTxn(default, default)) // From here the Injection works
+                .Type<NonNullType<LoadChatAndUpdateUnseenForUserTxn_OutputType>>()
+                .Argument("input", a => a.Type<NonNullType<LoadChatAndUpdateUnseenForUserTxn_InputType>>())
+                .Description("Get chat and update unseen comments for user")
+                ;
+
+            descriptor.Field(t => t.CreateMockChatsTxn(default, default)) // From here the Injection works
+    .Type<NonNullType<CreateMockChatsTxn_OutputType>>()
+    .Argument("input", a => a.Type<NonNullType<CreateMockChatsTxn_InputType>>())
+    .Description("Create MockChats")
+    ;
+
         }
     }
 

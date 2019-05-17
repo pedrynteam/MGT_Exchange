@@ -24,6 +24,8 @@ namespace MGT_Exchange.AuthAPI.MVC
         public string Password { get; set; }
         public string TokenAuth { get; set; }
 
+        public DateTime LastSeen { get; set; }
+
         // 1 to 1 - Steven Sandersons
         public string CompanyId { get; set; }
         [ForeignKey("CompanyId")]

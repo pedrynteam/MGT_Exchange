@@ -32,6 +32,11 @@ namespace MGT_Exchange.AuthAPI.GraphQL
     // Leave it empty, HotChocolate will take care of it
     public class UserAppInputType : InputObjectType<UserApp>
     {
-
+        
+        protected override void Configure(IInputObjectTypeDescriptor<UserApp> descriptor)
+        {
+            descriptor.Field(t => t.LastSeen)
+                .Type<DateTimeType>();
+        }
     }
 }

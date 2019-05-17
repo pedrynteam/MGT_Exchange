@@ -13,7 +13,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
     {
         protected override void Configure(IObjectTypeDescriptor<Company> descriptor)
         {
-            // descriptor.Field(t => t.Created)                    .Type<DateTimeType>();
+            descriptor.Field(t => t.CreatedAt)
+                .Type<DateTimeType>();
+
             descriptor.Field(t => t.Users)    
                 .Type<ListType<UserAppType>>()    
                 .Name("users")
@@ -42,11 +44,13 @@ namespace MGT_Exchange.ChatAPI.GraphQL
     }
 
     // Leave it empty, HotChocolate will take care of it
+    // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
     public class CompanyInputType : InputObjectType<Company>
     {
         protected override void Configure(IInputObjectTypeDescriptor<Company> descriptor)
         {
-            //descriptor.Field(t => t.Created)                .Type<DateTimeType>();
+            descriptor.Field(t => t.CreatedAt)    
+                .Type<DateTimeType>();
         }
     }
 }

@@ -30,8 +30,12 @@ namespace MGT_Exchange.ParticipantAPI.GraphQL
     }
 
     // Leave it empty, HotChocolate will take care of it
+    // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
     public class ParticipantInputType : InputObjectType<Participant>
     {
+        protected override void Configure(IInputObjectTypeDescriptor<Participant> descriptor)
+        {
 
+        }
     }
 }

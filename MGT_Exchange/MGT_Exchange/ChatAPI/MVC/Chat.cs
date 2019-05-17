@@ -15,10 +15,19 @@ namespace MGT_Exchange.ChatAPI.MVC
     {
         [Key]
         public int ChatId { get; set; }
-        
+
+        public string Type { get; set; }
+
         public string Name { get; set; }
 
-        public DateTime Created { get; set; }
+        public string Description { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
+        public bool Closed { get; set; }
+        public DateTime? ClosedAt { get; set; }
 
         // 1 to 1 - Steven Sandersons
         public string CompanyId { get; set; }
@@ -32,6 +41,16 @@ namespace MGT_Exchange.ChatAPI.MVC
 
         // 1 to Many - Steven Sandersons
         public virtual List<Comment> Comments { get; set; }
+
+        //* All the following fields to be used as references, i.e. How many comments are unseen, how many likes, etc
+
+        [NotMapped]
+        public int CommentsInChat { get; set; }
+
+        // To use for User References, not used as Total Chat but individual by User
+        [NotMapped]
+        public int UnseenForUser { get; set; }
+        
 
         /*
 
@@ -50,7 +69,7 @@ namespace MGT_Exchange.ChatAPI.MVC
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
         public virtual UserApp CreatedBy { get; set; }
         */
-        
+
 
         /*/ 1 to 1 - Steven Sandersons
         public String UserId { get; set; }

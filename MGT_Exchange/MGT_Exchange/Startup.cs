@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MGT_Exchange.Models;
 using HotChocolate;
 using HotChocolate.AspNetCore;
+using HotChocolate.Subscriptions;
 
 namespace MGT_Exchange
 {
@@ -50,6 +51,13 @@ namespace MGT_Exchange
             services.AddDbContext<MVCDbContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("MVCDbContext")));
 
+            // Add in-memory event provider - This is for subscriptions. NuGet Package HotChocolate.Subscriptions.InMemory
+            var eventRegistry = new InMemoryEventRegistry();
+            services.AddSingleton<IEventRegistry>(eventRegistry);
+            services.AddSingleton<IEventSender>(eventRegistry);
+
+            // this enables you to use DataLoader in your resolvers.
+            services.AddDataLoaderRegistry();
 
             // Add GraphQL Services
             services.AddGraphQL(sp => Schema.Create(c =>
@@ -59,11 +67,10 @@ namespace MGT_Exchange
                 // Adds the authorize directive and
                 // enables the authorization middleware.
                 // c.RegisterAuthorizeDirectiveType();
-
                 c.RegisterQueryType<GraphQLActions.GraphQLQueryType>();
                 c.RegisterMutationType<GraphQLActions.GraphQLMutationType>();
-                //c.RegisterSubscriptionType<GraphQLActions.GraphQLSubscriptionType>();
-
+                c.RegisterSubscriptionType<GraphQLActions.GraphQLSubscriptionType>();
+                c.RegisterExtendedScalarTypes(); //Needed to fix: CommentInput.created: Cannot resolve input-type `System.DateTime` - Type: CommentInput'
             }));
 
         }
@@ -99,7 +106,7 @@ namespace MGT_Exchange
             // */
 
             // enable this if you want tu support subscription.
-            // app.UseWebSockets();
+            app.UseWebSockets();
             app.UseGraphQL("/graphql");
             // enable this if you want to use graphiql instead of playground.
             // app.UseGraphiQL();
