@@ -28,18 +28,12 @@ namespace MGT_Exchange.ChatAPI.GraphQL
             descriptor.Field(t => t.Closed)
                          .Type<BooleanType>();
 
-            descriptor.Field(t => t.CommentsInChat)
-                         .Type<IntType>();
-
-            descriptor.Field(t => t.UnseenForUser)
-                         .Type<IntType>();
-
             descriptor.Field(t => t.UpdatedAt)
                          .Type<DateTimeType>();
 
             descriptor.Field(t => t.ClosedAt)
                          .Type<DateTimeType>();
-
+            /*
             descriptor.Field(t => t.CommentsInChat)
                 .Type<IntType>()
                 .Resolver(async context =>
@@ -80,7 +74,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
                 }
                 );
-
+                */
 
             descriptor.Field(t => t.Comments)    
                 .Type<ListType<CommentType>>()  
@@ -460,11 +454,6 @@ namespace MGT_Exchange.ChatAPI.GraphQL
             descriptor.Field(t => t.Closed)
              .Type<BooleanType>();
 
-            descriptor.Field(t => t.CommentsInChat)
-                         .Type<IntType>();
-
-            descriptor.Field(t => t.UnseenForUser)
-                         .Type<IntType>();
         }
     }
 }

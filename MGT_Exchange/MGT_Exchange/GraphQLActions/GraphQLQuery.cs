@@ -1,4 +1,5 @@
-﻿using HotChocolate.Types;
+﻿using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Types;
 using MGT_Exchange.AuthAPI.GraphQL;
 using MGT_Exchange.AuthAPI.MVC;
 using MGT_Exchange.ChatAPI.GraphQL;
@@ -72,6 +73,13 @@ namespace MGT_Exchange.GraphQLActions
             return await contextMVC.Participant.ToListAsync();
         }
 
+        public List<Chat> GetChats(List<int> chatIds)
+        {
+            return (from p in contextMVC.Chat
+                    where chatIds.Contains(p.ChatId)
+                    select p).ToList();
+        }
+
         // Get all comments for testing only
         public async Task<List<Comment>> GetCommentsAsync()
         {
@@ -143,6 +151,7 @@ namespace MGT_Exchange.GraphQLActions
     {
         protected override void Configure(IObjectTypeDescriptor<GraphQLQuery> descriptor)
         {
+
             descriptor.Field(t => t.GetTicketAsync(default))
                 .Type<TicketType>()
                 .Argument("id", a => a.Type<NonNullType<IntType>>())
@@ -163,7 +172,7 @@ namespace MGT_Exchange.GraphQLActions
                 .Type<ChatType>()    
                 .Argument("id", a => a.Type<NonNullType<IntType>>())    
                 .Name("chat")
-                //.Directive(new AuthorizeDirective()) // This is like Authenticated only
+                .Directive(new AuthorizeDirective()) // This is like Authenticated only
             //.Authorize(policy: "OnlyManagersDb") // This is using a policy
             ;
 
@@ -223,7 +232,14 @@ namespace MGT_Exchange.GraphQLActions
                 .Name("chatsByUser")
                 ;
 
-
+            descriptor.Field(t => t.GetChats(default))
+    .Type<ListType<ChatType>>()
+    .Argument("chatIds", a => a.Type<ListType<NonNullType<IdType>>>())
+     //a => a.Type<NonNullType<ListType<NonNullType<IntType>>>>()) // Be careful with the First NonNullType as it will break the schema when calling from C# [ID!]!
+     .Name("chatsByIds")
+    // fpa to test .Directive(new AuthorizeDirective())
+    // .Authorize(policy: "OnlyManagersDb")
+    ;
 
         }
 

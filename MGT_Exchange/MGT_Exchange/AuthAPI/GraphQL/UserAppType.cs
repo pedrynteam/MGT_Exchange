@@ -37,6 +37,12 @@ namespace MGT_Exchange.AuthAPI.GraphQL
         {
             descriptor.Field(t => t.LastSeen)
                 .Type<DateTimeType>();
+
+            descriptor.Field(t => t.Id)
+                .Ignore();
+
+            descriptor.Field(t => t.Active)
+                .Ignore();
         }
     }
 }

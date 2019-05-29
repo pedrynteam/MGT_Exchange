@@ -18,6 +18,7 @@ using MGT_Exchange.ChatAPI.MVC;
 using MGT_Exchange.ChatAPI.GraphQL;
 using MGT_Exchange.AuthAPI.GraphQL;
 using Microsoft.EntityFrameworkCore;
+using MGT_Exchange.AuthAPI.Resources;
 
 namespace MGT_Exchange.AuthAPI.Transactions
 {
@@ -26,6 +27,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
     {
         public UserApp User { get; set; }
         public Company Company { get; set; }
+
     }
 
     public class CreateUserTxn_InputType : InputObjectType<CreateUserTxn_Input>
@@ -158,6 +160,21 @@ namespace MGT_Exchange.AuthAPI.Transactions
 
                         //***** 5. Execute Send e-mails or other events once the database has been succesfully saved
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
+                        
+                        // Create the Login Token for the User
+                        try
+                        {
+                            if (!error)
+                            {
+                                input.User.LoginTokenId = LoginTokenFunction.CreateTokenId(input.User.Id, DateTime.UtcNow);
+                                contextMVC.UserApp.Update(input.User);
+                                await contextMVC.SaveChangesAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
+                        }
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
                         _output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "USER_SUCESSFULLY_CREATED"); // If OK                    

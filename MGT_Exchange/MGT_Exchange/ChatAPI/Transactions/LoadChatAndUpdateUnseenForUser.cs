@@ -11,6 +11,7 @@ using HotChocolate.Subscriptions;
 using MGT_Exchange.AuthAPI.MVC;
 using System.Collections.Generic;
 using MGT_Exchange.AuthAPI.GraphQL;
+using Newtonsoft.Json;
 
 namespace MGT_Exchange.ChatAPI.Transactions
 {
@@ -67,6 +68,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
             bool error = false; // To Handle Only One Error
             DateTime nowUTC = DateTime.UtcNow;
             List<Notification> notifications = new List<Notification>();
+            List<Comment> allSeen = new List<Comment>();
 
             try
             {
@@ -85,7 +87,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     
                     Chat chatDb = await contextMGT.Chat
                         .Where(x => x.ChatId == input.Chat.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))
+                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))                        
                         .FirstOrDefaultAsync();
 
                     if (chatDb == null)
@@ -99,7 +101,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     {
 
                         // Get the N unseen comments if any
-                        bool someUnseen = false;
+                        bool someAllseen = false;
                         
                         output.Comments = await contextMGT.Comment
                             .Where(x => x.ChatId == chatDb.ChatId)
@@ -109,8 +111,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                             .ToListAsync();
 
                         if (output.Comments.Count() > 0)
-                        {
-                            someUnseen = true;
+                        {                            
                             // Update the commentsInfo to the context
                             List<int> keys = output.Comments.Select(y => y.CommentId).ToList();
 
@@ -127,8 +128,22 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                             contextMGT.CommentInfo.UpdateRange(details);
 
-                            // Update the seen by all comment.
+                            // Commit? Yes I need it for the next step
+                            await contextMGT.SaveChangesAsync(); //
 
+                            allSeen = await contextMGT.Comment
+                                .Include(i => i.CommentsInfo)
+                                .Where(x => keys.Contains(x.CommentId))
+                                .Where(x => x.CommentsInfo.Count() == x.CommentsInfo.Count(y => y.Seen == true))
+                                .ToListAsync();
+
+                            if (allSeen.Count() > 0)
+                            {
+                                someAllseen = true;
+                                allSeen.ForEach(x => x.SeenByAll = true);
+                                contextMGT.UpdateRange(allSeen);
+                                await contextMGT.SaveChangesAsync();
+                            }
 
                         }
                         else // Get the N newest seen comments if any
@@ -154,32 +169,45 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         // Save the notifications - No need to?
 
                         String chatGroup = (chatDb.Participants.Count > 1) ? chatDb.Name : "";
-
-                        // Send to everyone except to himself
-                        var queryNotification = from user in chatDb.Participants
-                                                where user.UserAppId != userApp.UserAppId
-                                                select new Notification
-                                                {
-                                                    NotificationId = 0,
-                                                    Type = "NewComment",
-                                                    Title = "*NewComment*",
-                                                    Subtitle = chatGroup,
-                                                    Body = chatGroup + " *has a new comment from* " + userApp.UserName,
-                                                    Message = input.Comment.Message,
-                                                    ToUserAppId = user.UserAppId,
-                                                    Route = "Comment",
-                                                    RouteAction = "New",
-                                                    RouteId = input.Comment.CommentId.ToString(),
-                                                    CreatedAt = nowUTC,
-                                                    Seen = false
-                                                };
-
-                        notifications = queryNotification.ToList();
-                        
-
-                        // Save the Notifications to the context
-                        contextMGT.Notification.AddRange(notifications);
                         */
+
+                        if (someAllseen)
+                        {
+                            // Send the message for himself too, it's the way to know which message has been seen by all
+                            List<Comment> CommentsIds = (from ids in allSeen
+                                                        select new Comment
+                                                        {
+                                                            CommentId = ids.CommentId,
+                                                            ChatId = ids.ChatId,
+                                                            SeenByAll = ids.SeenByAll
+                                                        }).ToList();
+
+                            // Create a Notification for each user                                                       
+                            var queryNotification = from user in contextMGT.Participant
+                                                    where user.ChatId == chatDb.ChatId
+                                                    // where user.UserAppId != input.User.UserAppId // Send the message for himself too, because this include previous all seen messages
+                                                    select new Notification
+                                                    {
+                                                        NotificationId = 0,
+                                                        Type = "CommentSeen",
+                                                        Title = "*CommentSeen*",
+                                                        Subtitle = "",
+                                                        Body = JsonConvert.SerializeObject(CommentsIds),
+                                                        Message = "COMMENTS_SEEN",
+                                                        ToUserAppId = user.UserAppId,
+                                                        Route = "Comment",
+                                                        RouteAction = "Seen",
+                                                        RouteId = user.ChatId.ToString(),
+                                                        CreatedAt = nowUTC,
+                                                        Seen = false
+                                                    };
+
+
+                            notifications = queryNotification.ToList();
+
+                            // Save the Notifications to the context - No need to.
+                            //contextMGT.Notification.AddRange(notifications);
+                        }
 
                         if (!error && autoCommit)
                         {
@@ -197,41 +225,12 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                     if (!error) // Send the notification to the subscriptors
                     {
-
-                        // Create a Notification Queue
-
-                        //var result = eventSender.SendAsync(new OnEventMessageDefault<Comment>(eventName: "onCommentAddedToChat", argumentTag: "chatId", argumentValue: output.Comment.ChatId.ToString(), outputType: output.Comment));
-                        // Send the notification to each user * New Logic *
-                        /*
+                        // Send the notification to each user * New Logic *                        
                         foreach (var notification in notifications)
                         {
                             var result = eventSender.SendAsync(new OnEventMessageDefault<Notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: notification.ToUserAppId, outputType: notification));
                         }
-
-                        /*
-                        String chatGroup = (chatDb.Participants.Count > 1) ? " @ " + chatDb.Name : "";
-
-                        int countDelivered = 0;
-                        foreach (var user in chatDb.Participants)
-                        {
-                            String message = output.Comment.Message + " Mr. " + user.UserAppId;
-
-                            message = userApp.UserName + " Says " + output.Comment.Message + chatGroup;
-                            Notification notification = new Notification { NotificationId = 0, Created = nowUTC, Message = message };
-                            var result = eventSender.SendAsync(new OnEventMessageDefault<Notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: user.UserAppId, outputType: notification));
-
-                            if (result.IsCompletedSuccessfully)
-                            {
-                                countDelivered++;
-                            }
-
-
-                        }
-                        */
-
-
-
-                        // 
+                        
                     }
 
                 }

@@ -1,72 +1,71 @@
 ﻿using HotChocolate.Types;
+using MGT_Exchange.AuthAPI.GraphQL;
+using MGT_Exchange.AuthAPI.MVC;
+using MGT_Exchange.ChatAPI.GraphQL;
 using MGT_Exchange.ChatAPI.MVC;
+using MGT_Exchange.Data;
+using MGT_Exchange.GraphQLActions;
+using MGT_Exchange.GraphQLActions.Resources;
+using MGT_Exchange.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MGT_Exchange.AuthAPI.MVC;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-using Microsoft.Extensions.DependencyInjection;
-using MGT_Exchange.GraphQLActions.Resources;
-using MGT_Exchange.Data;
-using MGT_Exchange.GraphQLActions;
-using MGT_Exchange.Models;
-using MGT_Exchange.ChatAPI.GraphQL;
-using MGT_Exchange.AuthAPI.GraphQL;
-using MGT_Exchange.AuthAPI.Resources;
 
 namespace MGT_Exchange.AuthAPI.Transactions
 {
 
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
-    public class CreateCompanyTxn_Input
-    {
+    public class CreateCompanyAndXUsersTxn_Input
+    {        
         public Company Company { get; set; }
+        public int UsersToCreate { get; set; }
     }
 
-    public class CreateCompanyTxn_InputType : InputObjectType<CreateCompanyTxn_Input>
+    public class CreateCompanyAndXUsersTxn_InputType : InputObjectType<CreateCompanyAndXUsersTxn_Input>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<CreateCompanyTxn_Input> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<CreateCompanyAndXUsersTxn_Input> descriptor)
         {
             descriptor.Field(t => t.Company)
                 .Type<CompanyInputType>();
+            descriptor.Field(t => t.UsersToCreate)
+                .Type<IntType>();
         }
     }
 
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
-    public class CreateCompanyTxn_Output
+    public class CreateCompanyAndXUsersTxn_Output
     {
         public ResultConfirmation ResultConfirmation { get; set; }
         public Company Company { get; set; }
     }
 
-    public class CreateCompanyTxn_OutputType : ObjectType<CreateCompanyTxn_Output>
+    public class CreateCompanyAndXUsersTxn_OutputType : ObjectType<CreateCompanyAndXUsersTxn_Output>
     {
 
     }
 
     // 4. Transaction - Logic Controller
-    public class CreateCompanyTxn
+    public class CreateCompanyAndXUsersTxn
     {
 
-        public CreateCompanyTxn()
+        public CreateCompanyAndXUsersTxn()
         {
         }
 
-        public async Task<CreateCompanyTxn_Output> Execute(CreateCompanyTxn_Input input, IServiceProvider serviceProvider, MVCDbContext contextFatherMVC = null, ApplicationDbContext contextFatherApp = null, bool autoCommit = true)
+        public async Task<CreateCompanyAndXUsersTxn_Output> Execute(CreateCompanyAndXUsersTxn_Input input, IServiceProvider serviceProvider, MVCDbContext contextFatherMVC = null, bool autoCommit = true)
         {
-            CreateCompanyTxn_Output output = new CreateCompanyTxn_Output();
+            CreateCompanyAndXUsersTxn_Output output = new CreateCompanyAndXUsersTxn_Output();
             output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
-
-            String userType = "Company";
+            //String userType = "User";
 
             // Error handling
             bool error = false; // To Handle Only One Error
 
             try
-            {
-                ApplicationDbContext contextApp = (contextFatherApp != null) ? contextFatherApp : new ApplicationDbContext();
+            {                
                 MVCDbContext contextMVC = (contextFatherMVC != null) ? contextFatherMVC : new MVCDbContext();
                 // An using statement is in reality a try -> finally statement, disposing the element in the finally. So we need to take advance of that to create a DBContext inheritance                
                 try
@@ -78,15 +77,57 @@ namespace MGT_Exchange.AuthAPI.Transactions
 
                     //***** 0. Make The Validations - Be careful : Concurrency. Same name can be saved multiple times if called at the exact same time. Better have an alternate database constraint
 
+                    // Call the Transaction to Create the Company
+                    
+                    //CreateCompanyTxn_Input CreateCompanyTxn_Input = new CreateCompanyTxn_Input { Company = input.Company };
+                    //CreateCompanyTxn_Output CreateCompanyTxn = await new GraphQLMutation().CreateCompanyTxn(input: CreateCompanyTxn_Input, serviceProvider: serviceProvider);
+
+                    CreateCompanyTxn_Input CreateCompanyTxn_Input = new CreateCompanyTxn_Input { Company = input.Company};
+                    CreateCompanyTxn_Output CreateCompanyTxn = await new CreateCompanyTxn().Execute(input: CreateCompanyTxn_Input, serviceProvider: serviceProvider);
+
+                    if (!CreateCompanyTxn.ResultConfirmation.ResultPassed)
+                    {
+                        // Return the error as it is from the transaction
+                        error = true;
+                        output.ResultConfirmation = CreateCompanyTxn.ResultConfirmation;
+                        return output;
+                    }
+
+                    output.Company = CreateCompanyTxn.Company;
+
+                    // Now create a loop to create the X users. Use the same database
+                    for (int x = 1; x <= input.UsersToCreate; x++)
+                    {
+                        UserApp newUser = new UserApp { FirstName = "Name"+x, LastName = "LastName"+x, Nickname = "Nickname"+x, UserName = CreateCompanyTxn.Company.CompanyId+ "--" + x.ToString() };
+                        
+                        CreateUserTxn_Input CreateUserTxn_Input = new CreateUserTxn_Input { Company = CreateCompanyTxn.Company, User = newUser };
+                        CreateUserTxn_Output CreateUserTxn = await new CreateUserTxn().Execute(input: CreateUserTxn_Input, serviceProvider: serviceProvider, contextFatherMVC: contextMVC);
+                        
+                        if (!CreateUserTxn.ResultConfirmation.ResultPassed)
+                        {
+                            // Return the error as it is from the transaction
+                            error = true;
+                            output.ResultConfirmation = CreateUserTxn.ResultConfirmation;
+                            return output;
+                        }
+                    }
+
+                    
+                    // Logic, first create All the users in MVC Database. Commit, if something goes wrong return Error, if OK create users in master user App table.
+
+                    // 
+                    // UserManager<IdentityUser> _userManager = serviceProvider.GetService<UserManager<IdentityUser>>();
+
+                    /*
                     UserManager<IdentityUser> _userManager = serviceProvider.GetService<UserManager<IdentityUser>>();
 
-                    var user = new IdentityUser { UserName = input.Company.Name, Email = input.Company.Email, PasswordHash = input.Company.Password };
+                    var user = new IdentityUser { UserName = input.user.UserName, Email = input.user.Email, PasswordHash = input.user.PasswordHash };
                     var result = await _userManager.CreateAsync(user);
 
                     if (!result.Succeeded)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "COMPANY_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
+                        _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
                         List<ItemKey> resultKeys = new List<ItemKey>();
 
                         foreach (var errorDesc in result.Errors)
@@ -94,14 +135,16 @@ namespace MGT_Exchange.AuthAPI.Transactions
                             resultKeys.Add(new ItemKey(errorDesc.Code, errorDesc.Description));
                         }
 
-                        output.ResultConfirmation.ResultDictionary = resultKeys;
+                        _output.ResultConfirmation.ResultDictionary = resultKeys;
 
                     }
+                    */
 
                     if (!error)
                     {
                         //***** 1. Create the token (Atomic because is same Context DB)                        
 
+                        /*
                         // Save the Name Claim into the database
                         var _claims = new[]{
                             new Claim(ClaimTypes.Name, user.Id)
@@ -109,6 +152,8 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         };
 
                         var resultClaims = await _userManager.AddClaimsAsync(user, _claims); // Save claims in the Database
+                        
+
 
                         // Call transaction to get a new Token (we call the Mutation not the class itself) 
                         var tokenString = "";
@@ -118,51 +163,27 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         {
                             tokenString = createTokenTxn.token;
                         }
+                        */
 
-                        input.Company.CompanyId = user.Id;
-                        input.Company.Password = "";
-                        input.Company.TokenAuth = tokenString;                         
-
-                        contextMVC.Company.Add(input.Company);
 
                         //***** 4. Save and Commit to the Database (Atomic because is same Context DB) 
                         if (!error && autoCommit)
                         {
-                            await contextMVC.SaveChangesAsync(); // Call it only once so do all other operations first
-                            await contextApp.SaveChangesAsync(); // Call it only once so do all other operations first
+                            await contextMVC.SaveChangesAsync(); // Call it only once so do all other operations first                            
                         }
 
                         //***** 5. Execute Send e-mails or other events once the database has been succesfully saved
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
-                        // Create the Login Token for the company
-                        try
-                        {
-                            if (!error)
-                            {
-                                input.Company.LoginTokenId = LoginTokenFunction.CreateTokenId(input.Company.Id, DateTime.UtcNow);
-                                contextMVC.Company.Update(input.Company);
-                                await contextMVC.SaveChangesAsync();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
-                        }
-
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
                         output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMPANY_SUCESSFULLY_CREATED"); // If OK
-                        //output.token = tokenString; // The token                        
-                        output.Company = input.Company;
+                        //_output.token = tokenString; // The token                        
+                        //_output.user = input.user;
                     }// if (!error)
                 }
                 finally
                 {
                     // If the context Father is null the context was created on his own, so dispose it
-                    if (contextApp != null && contextFatherApp == null)
-                    {
-                        contextApp.Dispose();
-                    }
                     if (contextMVC != null && contextFatherMVC == null)
                     {
                         contextMVC.Dispose();
@@ -174,7 +195,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                 System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
-                output = new CreateCompanyTxn_Output(); // Restart variable to avoid returning any already saved data
+                output = new CreateCompanyAndXUsersTxn_Output(); // Restart variable to avoid returning any already saved data
                 output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally

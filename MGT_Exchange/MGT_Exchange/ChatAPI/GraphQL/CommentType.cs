@@ -247,11 +247,8 @@ namespace MGT_Exchange.ChatAPI.GraphQL
     {
         protected override void Configure(IInputObjectTypeDescriptor<Comment> descriptor)
         {
-            
-            descriptor.Field(t => t.UsersDeliveredTo).Ignore();
-            descriptor.Field(t => t.UsersSeenBy).Ignore();
-            descriptor.Field(t => t.UsersTotal).Ignore();
-            
+
+
         }
     }
 

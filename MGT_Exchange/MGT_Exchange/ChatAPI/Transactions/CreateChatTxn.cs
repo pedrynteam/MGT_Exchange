@@ -8,6 +8,7 @@ using MGT_Exchange.Models;
 using MGT_Exchange.ChatAPI.GraphQL;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using MGT_Exchange.AuthAPI.MVC;
 
 namespace MGT_Exchange.ChatAPI.Transactions
 {
@@ -106,7 +107,12 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         {
                             chatFound = true;
                             chatDb.UpdatedAt = nowUTC;
-                            
+
+                            input.Chat.Comments = null;
+
+                            /* Dont save comments during Create Chat
+                             * 
+                             * 
                             // Save the comments into the Database
                             foreach (var comment in input.Chat.Comments)
                             {
@@ -115,6 +121,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
                                 comment.CreatedAt = nowUTC;
                                 contextMGT.Comment.Add(comment);
                             }
+                            */
+
                             output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_FOUND"); // If Found
                             output.Chat = chatDb;
                         }

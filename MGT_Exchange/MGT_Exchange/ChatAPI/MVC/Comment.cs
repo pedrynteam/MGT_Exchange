@@ -22,9 +22,6 @@ namespace MGT_Exchange.ChatAPI.MVC
 
         public bool SeenByAll { get; set; } // Save it on Database, just to know if comment was seen by all participants
 
-        [NotMapped]
-        public bool SeenByUser { get; set; } // Dont Save on Database, use as reference
-
         // 1 to Many - Steven Sandersons
         public int ChatId { get; set; }
         [ForeignKey("ChatId")]        
@@ -41,7 +38,7 @@ namespace MGT_Exchange.ChatAPI.MVC
         public virtual List<CommentInfo> CommentsInfo { get; set; }
 
         
-
+        /*
         // Instead of all this combinations, just add one column for Status: Sent, Delivered to All, Seen by All. (update the comment record using the users connections)
         [NotMapped]
         public int UsersTotal
@@ -78,7 +75,7 @@ namespace MGT_Exchange.ChatAPI.MVC
             }
         }
 
-
+    */
 
 
 

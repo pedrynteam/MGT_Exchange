@@ -143,10 +143,14 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         // Create and Save the CommentInfo for each user. 
 
                         var query = from user in chatDb.Participants
+                                    where !user.UserAppId.Equals(input.Comment.UserAppId)
                                     select new CommentInfo { CommentInfoId = 0, CommentId = 0, CreatedAt = nowUTC, Delivered = false, Seen = false, UserAppId = user.UserAppId };
+                        // the current user must be Seen = True; SeenAt = NowUTC
+                        CommentInfo ThisUser = new CommentInfo { CommentInfoId = 0, CommentId = 0, CreatedAt = nowUTC, Delivered = false, Seen = true, SeenAt = nowUTC, UserAppId = input.Comment.UserAppId };
 
                         input.Comment.CommentsInfo = new List<CommentInfo>();
                         input.Comment.CommentsInfo = query.ToList();
+                        input.Comment.CommentsInfo.Add(ThisUser);
 
                         // Save the chat to the context
                         contextMGT.Comment.Add(input.Comment);

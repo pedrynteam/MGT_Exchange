@@ -1,5 +1,6 @@
 ﻿using HotChocolate.Types;
 using MGT_Exchange.AuthAPI.GraphQL;
+using MGT_Exchange.AuthAPI.MVC;
 using MGT_Exchange.ChatAPI.MVC;
 using MGT_Exchange.Models;
 using System;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MGT_Exchange.ChatAPI.GraphQL
+namespace MGT_Exchange.AuthAPI.GraphQL
 {    
     public class CompanyType : ObjectType<Company>
     {
@@ -51,6 +52,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
         {
             descriptor.Field(t => t.CreatedAt)    
                 .Type<DateTimeType>();
+
+            descriptor.Field(t => t.Id)
+                .Ignore();
         }
     }
 }

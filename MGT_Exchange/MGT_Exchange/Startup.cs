@@ -17,6 +17,12 @@ using MGT_Exchange.Models;
 using HotChocolate;
 using HotChocolate.AspNetCore;
 using HotChocolate.Subscriptions;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MGT_Exchange.AuthAPI.Transactions;
+using System.Security.Claims;
 
 namespace MGT_Exchange
 {
@@ -56,6 +62,24 @@ namespace MGT_Exchange
             services.AddSingleton<IEventRegistry>(eventRegistry);
             services.AddSingleton<IEventSender>(eventRegistry);
 
+            // https://jonhilton.net/security/apis/secure-your-asp.net-core-2.0-api-part-2---jwt-bearer-authentication/
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = "https://localhost:44325",
+                ValidAudience = "https://localhost:44325",
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes("superSecretKey@345"))//_configuration["SecurityKey"]))
+            };
+        });
+
             // this enables you to use DataLoader in your resolvers.
             services.AddDataLoaderRegistry();
 
@@ -66,15 +90,33 @@ namespace MGT_Exchange
 
                 // Adds the authorize directive and
                 // enables the authorization middleware.
-                // c.RegisterAuthorizeDirectiveType();
+                c.RegisterAuthorizeDirectiveType();
                 c.RegisterQueryType<GraphQLActions.GraphQLQueryType>();
                 c.RegisterMutationType<GraphQLActions.GraphQLMutationType>();
                 c.RegisterSubscriptionType<GraphQLActions.GraphQLSubscriptionType>();
                 c.RegisterExtendedScalarTypes(); //Needed to fix: CommentInput.created: Cannot resolve input-type `System.DateTime` - Type: CommentInput'
             }));
 
+            services.AddAuthorization(options =>
+            {
+                // Using Token
+                options.AddPolicy("CompletedTrainingToken", policy =>
+                    policy.RequireAssertion(context =>
+                        context.User.HasClaim("CompletedBasicTraining", "Yes")
+                        ));
+
+                // Using ApplicationDbContext Database claims
+                options.AddPolicy("OnlyManagersDb", policy =>
+                policy.Requirements.Add(
+                    new ClaimInDatabaseRequirement(new Claim("EmployeeStatus", "Manager")))
+                    );
+
+            });
+
+            services.AddSingleton<IAuthorizationHandler, ClaimInDatabaseHandler>();
+
         }
-        
+
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
@@ -96,7 +138,7 @@ namespace MGT_Exchange
 
             app.UseAuthentication();
 
-            //* this part is failing the playground and get Schema. Syn, Sync, Sync
+            /* this part is failing the playground and get Schema. Syn, Sync, Sync
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -105,12 +147,27 @@ namespace MGT_Exchange
             });
             // */
 
+
+
             // enable this if you want tu support subscription.
             app.UseWebSockets();
+            /*/
+            // Had to not use /graphql because SAHB cannot support it
             app.UseGraphQL("/graphql");
+            app.UseGraphQL();
             // enable this if you want to use graphiql instead of playground.
             // app.UseGraphiQL();
-            app.UsePlayground("/graphql", "/playground");
+            app.UsePlayground("/graphql", "/playground"); //*/
+           
+            //*
+            // enable this if you want to use graphiql instead of playground.
+            // Use is in this way
+            app.UseGraphQL();
+            app.UseGraphiQL();
+            app.UsePlayground();
+            //*/
+
+
 
         }
     }

@@ -16,6 +16,11 @@ namespace MGT_Exchange.AuthAPI.MVC
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public string UserAppId { get; set; }
 
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        public string LoginTokenId { get; set; } // Use it to Identify 
+
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string UserName { get; set; }
@@ -25,6 +30,8 @@ namespace MGT_Exchange.AuthAPI.MVC
         public string TokenAuth { get; set; }
 
         public DateTime LastSeen { get; set; }
+
+        public bool Active { get; set; } // To know that the user is Active or not. So dont send him notifications, messages, etc, etc.
 
         // 1 to 1 - Steven Sandersons
         public string CompanyId { get; set; }

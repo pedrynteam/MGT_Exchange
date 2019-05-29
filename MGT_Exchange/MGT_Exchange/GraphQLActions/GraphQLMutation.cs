@@ -36,6 +36,12 @@ namespace MGT_Exchange.GraphQLActions
             return await createUserTxn.Execute(input: input, serviceProvider: serviceProvider);
         }
 
+        public async Task<CreateCompanyAndXUsersTxn_Output> CreateCompanyAndXUsersTxn(CreateCompanyAndXUsersTxn_Input input, [Service]IServiceProvider serviceProvider)
+        {
+            CreateCompanyAndXUsersTxn CreateCompanyAndXUsersTxn = new CreateCompanyAndXUsersTxn();
+            return await CreateCompanyAndXUsersTxn.Execute(input: input, serviceProvider: serviceProvider);
+        }
+
         public async Task<CreateChatTxn_Output> CreateChatTxn(CreateChatTxn_Input input)
         {
             CreateChatTxn createChatTxn = new CreateChatTxn();
@@ -115,6 +121,12 @@ namespace MGT_Exchange.GraphQLActions
                 .Type<NonNullType<CreateUserTxn_OutputType>>()
                 .Argument("input", a => a.Type<NonNullType<CreateUserTxn_InputType>>())
                 .Description("Create User")
+                ;
+
+            descriptor.Field(t => t.CreateCompanyAndXUsersTxn(default, default)) // From here the Injection works
+                .Type<NonNullType<CreateCompanyAndXUsersTxn_OutputType>>()
+                .Argument("input", a => a.Type<NonNullType<CreateCompanyAndXUsersTxn_InputType>>())
+                .Description("Create Company And X Users")
                 ;
 
             descriptor.Field(t => t.CreateTokenTxn(default, default))

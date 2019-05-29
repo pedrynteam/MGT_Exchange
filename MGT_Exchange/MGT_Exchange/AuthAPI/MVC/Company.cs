@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MGT_Exchange.ChatAPI.MVC
+namespace MGT_Exchange.AuthAPI.MVC
 {
 
     public class Company
@@ -14,6 +14,11 @@ namespace MGT_Exchange.ChatAPI.MVC
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public string CompanyId { get; set; }
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+        
+        public string LoginTokenId { get; set; } // Use it to Identify 
 
         public string Name { get; set; }
 
