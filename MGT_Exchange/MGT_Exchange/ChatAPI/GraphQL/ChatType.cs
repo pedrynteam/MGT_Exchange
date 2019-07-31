@@ -17,21 +17,21 @@ using System.Threading.Tasks;
 namespace MGT_Exchange.ChatAPI.GraphQL
 {
 
-    public class ChatType : ObjectType<Chat>
+    public class ChatType : ObjectType<chat>
     {
-        protected override void Configure(IObjectTypeDescriptor<Chat> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<chat> descriptor)
         {
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                          .Type<DateTimeType>();
 
-            descriptor.Field(t => t.Closed)
+            descriptor.Field(t => t.closed)
                          .Type<BooleanType>();
 
-            descriptor.Field(t => t.UpdatedAt)
+            descriptor.Field(t => t.updatedAt)
                          .Type<DateTimeType>();
 
-            descriptor.Field(t => t.ClosedAt)
+            descriptor.Field(t => t.closedAt)
                          .Type<DateTimeType>();
             /*
             descriptor.Field(t => t.CommentsInChat)
@@ -76,67 +76,50 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                 );
                 */
 
-            descriptor.Field(t => t.Comments)    
+            descriptor.Field(t => t.comments)    
                 .Type<ListType<CommentType>>()  
                 .Name("comments")    
                 .Argument("index", a => a.Type<IntType>())    
                 .Argument("take", a => a.Type<IntType>())
-                .Argument("older", a => a.Type<BooleanType>())
-                .Argument("onlyNewest", a => a.Type<BooleanType>())
-                .Argument("unreadForUserAppId", a => a.Type<StringType>())
+                .Argument("older", a => a.Type<BooleanType>())                
                 .Argument("unseenForUserId", a => a.Type<StringType>())
-                .Argument("unseenForUserTake", a => a.Type<IntType>())
-                .Argument("newestWhenNoUnseen", a => a.Type<IntType>())
+                .Argument("unseenForUserIdTake", a => a.Type<IntType>())
+                .Argument("newestWhenNoUnseenTake", a => a.Type<IntType>())
                 .Argument("newestInChatTake", a => a.Type<IntType>())
                 .Resolver(async context =>   
                 {
-                    
-                    /*
-                    // Convert the top N Comments to Seen
-                    List<int> toMarkAsSeen = new List<int> { 68, 69, 70, 71 };
+                    /* Priority:
+                     * 1. newestInChatTake
+                     * 2. unseenForUserId, unseenForUserIdTake, newestWhenNoUnseenTake
+                     * */
 
-                    var conte = context.Service<MVCDbContext>();
-
-                    List<CommentInfo> comme = await conte.CommentInfo
-                        .Where(x => toMarkAsSeen.Contains(x.CommentId))
-                        .ToListAsync();
-
-                    foreach (var com in comme)
-                    {
-                        com.Seen = true;
-                        com.SeenAt = DateTime.UtcNow;
-                        conte.Update(com);
-                    }
-
-                    await conte.SaveChangesAsync();
-                    */
-
-                    string unseenForUserId = context.Argument<string>("unseenForUserId");
-                    int unseenForUserTake = context.Argument<int>("unseenForUserTake");
-                    int newestWhenNoUnseen = context.Argument<int>("newestWhenNoUnseen");
-                    
+                     // Return X newest messages. Main use: to show the newest message, unseen or not
                     int newestInChatTake = context.Argument<int>("newestInChatTake");
 
-                    IDataLoader<int, List<Comment>> dataLoaderComm = context.BatchDataLoader<int, List<Comment>>(
+                    // Return X unseen messages for user
+                    string unseenForUserId = context.Argument<string>("unseenForUserId");
+                    int unseenForUserIdTake = context.Argument<int>("unseenForUserIdTake");
+                    int newestWhenNoUnseenTake = context.Argument<int>("newestWhenNoUnseenTake");
+                    
+                    IDataLoader<int, List<comment>> dataLoaderComm = context.BatchDataLoader<int, List<comment>>(
                     "unseenForUserId",
                     async keys =>
                     {
-                        Dictionary<int, List<Comment>> result = new Dictionary<int, List<Comment>>();
+                        Dictionary<int, List<comment>> result = new Dictionary<int, List<comment>>();
 
                         if (newestInChatTake > 0) // Max Priority
                         {
                             // To me, this feels like E=mc^2 .. an incredibly simple solution to a relatively complex problem
                             var rankNewest = context.Service<MVCDbContext>().Comment
-                                .Where(x => keys.Contains(x.ChatId))
-                                .GroupBy(d => d.ChatId)
-                                .SelectMany(g => g.OrderByDescending(y => y.CommentId)
+                                .Where(x => keys.Contains(x.chatId))
+                                .GroupBy(d => d.chatId)
+                                .SelectMany(g => g.OrderByDescending(y => y.commentId)
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
                                 .Where(y => y.Rank <= newestInChatTake)
                                 .GroupBy(g => g.Key)
-                                .ToDictionary(g => g.Key, g => g.Select(a => a.Item).OrderBy(y => y.CommentId).ToList())
+                                .ToDictionary(g => g.Key, g => g.Select(a => a.Item).OrderBy(y => y.commentId).ToList())
                                 ;
-
-                            // var d3 = d.Concat(d2).ToDictionary(s => s.Key, s => s.Value);
+                            
                             result = rankNewest;
                         } // if (newestForUserId > 0) // Max Priority
                         else
@@ -145,20 +128,19 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
                             // To me, this feels like E=mc^2 .. an incredibly simple solution to a relatively complex problem
                             var rankUnseen = context.Service<MVCDbContext>().Comment
-                                .Where(x => keys.Contains(x.ChatId))
-                                .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(unseenForUserId) && y.Seen == false))
-                                .GroupBy(d => d.ChatId)
-                                .SelectMany(g => g.OrderBy(y => y.CommentId)
+                                .Where(x => keys.Contains(x.chatId))
+                                .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(unseenForUserId) && y.seen == false))
+                                .GroupBy(d => d.chatId)
+                                .SelectMany(g => g.OrderBy(y => y.commentId)
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
-                                .Where(y => y.Rank <= unseenForUserTake)
+                                .Where(y => y.Rank <= unseenForUserIdTake)
                                 .GroupBy(g => g.Key)
                                 .ToDictionary(g => g.Key, g => g.Select(a => a.Item).ToList())
                                 ;
 
-                            // Fix: Microsoft.EntityFrameworkCore.Query:Warning: The LINQ expression 'GroupBy([x].ChatId, [x])' could not be translated and will be evaluated locally.
-                            
+                            // Fix: Microsoft.EntityFrameworkCore.Query:Warning: The LINQ expression 'GroupBy([x].ChatId, [x])' could not be translated and will be evaluated locally.                            
 
-                            if (newestWhenNoUnseen == 0)
+                            if (newestWhenNoUnseenTake == 0)
                             {
                                 result = rankUnseen;
                             }
@@ -169,20 +151,17 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
                                 // To me, this feels like E=mc^2 .. an incredibly simple solution to a relatively complex problem
                                 var rankNewestNoUnseen = context.Service<MVCDbContext>().Comment
-                                    .Where(x => keysSeen.Contains(x.ChatId))
-                                    .GroupBy(d => d.ChatId)
-                                    .SelectMany(g => g.OrderByDescending(y => y.CommentId)
+                                    .Where(x => keysSeen.Contains(x.chatId))
+                                    .GroupBy(d => d.chatId)
+                                    .SelectMany(g => g.OrderByDescending(y => y.commentId)
                                     .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
-                                    .Where(y => y.Rank <= newestWhenNoUnseen)
+                                    .Where(y => y.Rank <= newestWhenNoUnseenTake)
                                     .GroupBy(g => g.Key)
-                                    .ToDictionary(g => g.Key, g => g.Select(a => a.Item).OrderBy(y => y.CommentId).ToList())
+                                    .ToDictionary(g => g.Key, g => g.Select(a => a.Item).OrderBy(y => y.commentId).ToList())
                                     ;
-
-                                // var d3 = d.Concat(d2).ToDictionary(s => s.Key, s => s.Value);
+                                
                                 result = rankUnseen.Concat(rankNewestNoUnseen).ToDictionary(s => s.Key, s => s.Value);
                             }
-
-
 
                         }// if (!string.IsNullOrEmpty(unseenForUserId))
 
@@ -190,7 +169,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                     }
                     );
                                
-                    return await dataLoaderComm.LoadAsync(context.Parent<Chat>().ChatId);
+                    return await dataLoaderComm.LoadAsync(context.Parent<chat>().chatId);
 
 /*
                     List<Comment> comments = new List<Comment>();
@@ -374,7 +353,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                 )
                 ;
             
-            descriptor.Field(t => t.Participants)    
+            descriptor.Field(t => t.participants)    
                             .Type<ListType<ParticipantType>>()  
                             .Name("participants")    
                             .Argument("index", a => a.Type<IntType>())    
@@ -389,7 +368,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                                 // 1. Where index based
                                 // 2. Order By
                                 // 3. Take 
-                                return context.Service<MVCDbContext>().Participant.Where(x => x.ChatId == context.Parent<Chat>().ChatId).Where(x => x.ParticipantId > _index).OrderByDescending(y => y.ParticipantId).Take(_take);
+                                return context.Service<MVCDbContext>().Participant.Where(x => x.chatId == context.Parent<chat>().chatId).Where(x => x.participantId > _index).OrderByDescending(y => y.participantId).Take(_take);
                             }    
                             )    
                             ;
@@ -438,20 +417,20 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
     // Leave it empty, HotChocolate will take care of it
     // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
-    public class ChatInputType : InputObjectType<Chat>
+    public class ChatInputType : InputObjectType<chat>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<Chat> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<chat> descriptor)
         {
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
              .Type<DateTimeType>();
 
-            descriptor.Field(t => t.UpdatedAt)
+            descriptor.Field(t => t.updatedAt)
                          .Type<DateTimeType>();
 
-            descriptor.Field(t => t.ClosedAt)
+            descriptor.Field(t => t.closedAt)
                          .Type<DateTimeType>();
 
-            descriptor.Field(t => t.Closed)
+            descriptor.Field(t => t.closed)
              .Type<BooleanType>();
 
         }

@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.ChatAPI.GraphQL
 {
-    public class CommentType : ObjectType<Comment>
+    public class CommentType : ObjectType<comment>
     {
         /*
         public Task<Person> GetPerson(string id, IResolverContext context, [Service]IPersonRepository repository)
@@ -24,15 +24,15 @@ namespace MGT_Exchange.ChatAPI.GraphQL
         }
         */
 
-        protected override void Configure(IObjectTypeDescriptor<Comment> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<comment> descriptor)
         {
-            descriptor.Field(t => t.Chat)
+            descriptor.Field(t => t.chat)
                 .Type<ChatType>()
                 .Name("chat")
-                .Resolver(context => context.Service<MVCDbContext>().Chat.FindAsync(context.Parent<Comment>().ChatId))
+                .Resolver(context => context.Service<MVCDbContext>().Chat.FindAsync(context.Parent<comment>().chatId))
                 ;
 
-            descriptor.Field(t => t.SeenByAll)
+            descriptor.Field(t => t.seenByAll)
                 .Type<BooleanType>()
                 .Resolver(async context =>
                 {
@@ -43,9 +43,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                     ;//*/
 
                     var x2 = context.Service<MVCDbContext>().CommentInfo
-                    .Where(x => x.CommentId == 1)
-                    .GroupBy(x => x.CommentId)
-                    .ToDictionary(g => g.Key, g => g.Any(x => x.CommentId == 2));
+                    .Where(x => x.commentId == 1)
+                    .GroupBy(x => x.commentId)
+                    .ToDictionary(g => g.Key, g => g.Any(x => x.commentId == 2));
 
 
                     //* Version 1
@@ -54,13 +54,13 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                 async keys => await
                 (from commInfo in context.Service<MVCDbContext>().CommentInfo
                      //where comm.CommentId == context.Parent<Comment>().CommentId
-                 where keys.Contains(commInfo.CommentId)
-                 group commInfo by commInfo.CommentId into grp
+                 where keys.Contains(commInfo.commentId)
+                 group commInfo by commInfo.commentId into grp
                  select new
                  {
                      id = grp.Key,
                      participants = grp.Count(), // All participants
-                     seen = grp.Count(x => x.Seen == true) // Only messages seen
+                     seen = grp.Count(x => x.seen == true) // Only messages seen
                  }).ToDictionaryAsync(mc => mc.id, mc => (mc.seen == mc.participants) ? true : false)
                     
                 );//*/
@@ -76,12 +76,12 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                         .ToDictionaryAsync(g => g.Key, g => g.Any(x => x.CommentsInfo.Count() == x.CommentsInfo.Count(y => y.Seen == true)))               
                         ); //*/
 
-                    return await dataLoader.LoadAsync(context.Parent<Comment>().CommentId);
+                    return await dataLoader.LoadAsync(context.Parent<comment>().commentId);
 
                 }
                 );
 
-            descriptor.Field(t => t.User)
+            descriptor.Field(t => t.user)
                 .Type<UserAppType>()            
             .Resolver(async context =>
             {
@@ -91,15 +91,15 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                  * LEFT JOIN [UserApp] AS [z.User] ON [z].[UserAppId] = [z.User].[UserAppId]
                  * WHERE ([z].[ChatId] = @__Parent_ChatId_0) AND [z].[UserAppId] IN (N'489ecc19-6b9c-4eab-a83e-7f63b9a4a6c4', N'89214e83-3836-4d1a-95be-8a91f2b58e8c', N'8b704c20-fa29-43e8-a4a2-30f101174cd1', N'48358da4-a9a5-4b31-922e-4eba531ef48e')
                  */
-                IDataLoader<string, UserApp> dataLoader = context.BatchDataLoader<string, UserApp>(
+                IDataLoader<string, userApp> dataLoader = context.BatchDataLoader<string, userApp>(
                 "UserById",
-                async keys => await context.Service<MVCDbContext>().Participant.Include(z => z.User).Where(x => x.ChatId == context.Parent<Comment>().ChatId).Where(q => keys.Contains(q.UserAppId)).ToDictionaryAsync(mc => mc.UserAppId, mc => mc.User)
+                async keys => await context.Service<MVCDbContext>().Participant.Include(z => z.user).Where(x => x.chatId == context.Parent<comment>().chatId).Where(q => keys.Contains(q.userAppId)).ToDictionaryAsync(mc => mc.userAppId, mc => mc.user)
                 );
 
-                return await dataLoader.LoadAsync(context.Parent<Comment>().UserAppId);
+                return await dataLoader.LoadAsync(context.Parent<comment>().userAppId);
             });
 
-            descriptor.Field(t => t.CommentsInfo)
+            descriptor.Field(t => t.commentsInfo)
                 .Type<ListType<CommentInfoType>>()
                 .Name("commentsInfo")
                 .Argument("index", a => a.Type<IntType>())
@@ -113,7 +113,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                  int infoForCommentId = context.Argument<int>("infoForCommentId");
                  string infoForUserId = context.Argument<string>("infoForUserId");
 
-                 IDataLoader<int, List<CommentInfo>> dataLoader = context.BatchDataLoader<int, List<CommentInfo>>(
+                 IDataLoader<int, List<commentInfo>> dataLoader = context.BatchDataLoader<int, List<commentInfo>>(
                 "commentsInfoById",
                 async keys =>
                 {
@@ -124,25 +124,25 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                      * index, take N (This is for specific CommentId because of the Index)
                      * */
 
-                    Dictionary<int, List<CommentInfo>> result = new Dictionary<int, List<CommentInfo>>();
+                    Dictionary<int, List<commentInfo>> result = new Dictionary<int, List<commentInfo>>();
 
                     if (!string.IsNullOrEmpty(infoForUserId))
                     {
                         return await context.Service<MVCDbContext>().CommentInfo
-                        .Where(x => keys.Contains(x.CommentId))
-                        .Where(x => x.UserAppId.Equals(infoForUserId))
-                        .GroupBy(g => g.CommentId)
+                        .Where(x => keys.Contains(x.commentId))
+                        .Where(x => x.userAppId.Equals(infoForUserId))
+                        .GroupBy(g => g.commentId)
                         .ToDictionaryAsync(d => d.Key, d => d.ToList());
                     }
 
                     if (infoForCommentId > 0)
                     {
                         result = context.Service<MVCDbContext>().CommentInfo
-                        .Where(x => keys.Contains(x.CommentId))
-                        .Where(x => x.CommentId == infoForCommentId)
-                        .Where(x => x.CommentInfoId > index)
-                        .GroupBy(g => g.CommentId)
-                        .SelectMany(g => g.OrderBy(y => y.CommentInfoId)
+                        .Where(x => keys.Contains(x.commentId))
+                        .Where(x => x.commentId == infoForCommentId)
+                        .Where(x => x.commentInfoId > index)
+                        .GroupBy(g => g.commentId)
+                        .SelectMany(g => g.OrderBy(y => y.commentInfoId)
                         .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
                         .Where(y => y.Rank <= take)
                         .GroupBy(g => g.Key)
@@ -154,9 +154,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
                     // Default: Order by CommentInfoId, show the N oldest
                     return context.Service<MVCDbContext>().CommentInfo
-                        .Where(x => keys.Contains(x.CommentId))
-                        .GroupBy(g => g.CommentId)
-                        .SelectMany(g => g.OrderBy(y => y.CommentInfoId)
+                        .Where(x => keys.Contains(x.commentId))
+                        .GroupBy(g => g.commentId)
+                        .SelectMany(g => g.OrderBy(y => y.commentInfoId)
                         .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
                         .Where(y => y.Rank <= take)
                         .GroupBy(g => g.Key)
@@ -167,7 +167,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                     
                 );
 
-                 return await dataLoader.LoadAsync(context.Parent<Comment>().CommentId);
+                 return await dataLoader.LoadAsync(context.Parent<comment>().commentId);
                  
                  
                  /*
@@ -194,7 +194,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
             
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
              .Type<DateTimeType>();
 
             /*
@@ -243,9 +243,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
     // Leave it empty, HotChocolate will take care of it
     // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
-    public class CommentInputType : InputObjectType<Comment>
+    public class CommentInputType : InputObjectType<comment>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<Comment> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<comment> descriptor)
         {
 
 

@@ -15,14 +15,14 @@ namespace MGT_Exchange.GraphQLActions
         {
         }
 
-        public Comment OnCommentAddedToChat(string chatId, IEventMessage message)
+        public comment OnCommentAddedToChat(string chatId, IEventMessage message)
         {
-            return (Comment)message.Payload;
+            return (comment)message.Payload;
         }
 
-        public Notification OnNotificationToUser(string userAppId, IEventMessage message)
+        public notification OnNotificationToUser(string userAppId, IEventMessage message)
         {
-            return (Notification)message.Payload;
+            return (notification)message.Payload;
         }
 
     }

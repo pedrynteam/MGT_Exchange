@@ -10,14 +10,14 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.AuthAPI.GraphQL
 {    
-    public class CompanyType : ObjectType<Company>
+    public class CompanyType : ObjectType<company>
     {
-        protected override void Configure(IObjectTypeDescriptor<Company> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<company> descriptor)
         {
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.Users)    
+            descriptor.Field(t => t.users)    
                 .Type<ListType<UserAppType>>()    
                 .Name("users")
                 .Argument("nameLike", a => a.Type<StringType>())                
@@ -31,11 +31,11 @@ namespace MGT_Exchange.AuthAPI.GraphQL
         if (!String.IsNullOrEmpty(nameLike))
         {
             //return context.Service<MVCDbContext>().UserApp.Where(x => x.CompanyId == context.Parent<Company>().CompanyId).Where(q => q.UserName.Contains(nameLike));
-            return context.Service<MVCDbContext>().UserApp.Where(x => x.CompanyId.Equals(context.Parent<Company>().CompanyId)).Where(q => q.UserName.Contains(nameLike));
+            return context.Service<MVCDbContext>().UserApp.Where(x => x.companyId.Equals(context.Parent<company>().companyId)).Where(q => q.userName.Contains(nameLike));
         }
         else
         {
-            return context.Service<MVCDbContext>().UserApp.Where(x => x.CompanyId.Equals(context.Parent<Company>().CompanyId));
+            return context.Service<MVCDbContext>().UserApp.Where(x => x.companyId.Equals(context.Parent<company>().companyId));
         }
         
     }
@@ -46,14 +46,14 @@ namespace MGT_Exchange.AuthAPI.GraphQL
 
     // Leave it empty, HotChocolate will take care of it
     // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
-    public class CompanyInputType : InputObjectType<Company>
+    public class CompanyInputType : InputObjectType<company>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<Company> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<company> descriptor)
         {
-            descriptor.Field(t => t.CreatedAt)    
+            descriptor.Field(t => t.createdAt)    
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.Id)
+            descriptor.Field(t => t.id)
                 .Ignore();
         }
     }

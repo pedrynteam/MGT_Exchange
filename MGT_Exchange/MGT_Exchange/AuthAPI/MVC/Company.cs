@@ -9,29 +9,29 @@ using System.Threading.Tasks;
 namespace MGT_Exchange.AuthAPI.MVC
 {
 
-    public class Company
+    public class company
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public string CompanyId { get; set; }
+        public string companyId { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public int id { get; set; }
         
-        public string LoginTokenId { get; set; } // Use it to Identify 
+        public string loginTokenId { get; set; } // Use it to Identify 
 
-        public string Name { get; set; }
+        public string name { get; set; }
 
-        public string Description { get; set; }
+        public string description { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime createdAt { get; set; }
 
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string email { get; set; }
+        public string password { get; set; }
 
-        public string TokenAuth { get; set; }
+        public string tokenAuth { get; set; }
 
         // 1 to Many - Steven Sandersons
-        public virtual List<UserApp> Users { get; set; }
+        public virtual List<userApp> users { get; set; }
     }
 }

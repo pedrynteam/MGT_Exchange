@@ -7,62 +7,62 @@ using System.Threading.Tasks;
 namespace MGT_Exchange.GraphQLActions.Resources
 {
     // Class to handle confirmations to client, PASS / FAIL, Message
-    public class ResultConfirmation
+    public class resultConfirmation
     {
-        public string ResultCode { get; set; }
-        public bool ResultPassed { get; set; }
-        public string ResultMessage { get; set; } // Message to translate: ORDER_NOT_FOUND
-        public string ResultDetail { get; set; } // Detail to transaction: 1   (Order number)
-        public List<ItemKey> ResultDictionary { get; set; }
+        public string resultCode { get; set; }
+        public bool resultPassed { get; set; }
+        public string resultMessage { get; set; } // Message to translate: ORDER_NOT_FOUND
+        public string resultDetail { get; set; } // Detail to transaction: 1   (Order number)
+        public List<itemKey> resultDictionary { get; set; }
 
-        public static ResultConfirmation resultGood(string _ResultMessage, string _ResultDetail = "", List<ItemKey> _ResultDictionary = null)
+        public static resultConfirmation resultGood(string _ResultMessage, string _ResultDetail = "", List<itemKey> _ResultDictionary = null)
         {
-            return new ResultConfirmation
+            return new resultConfirmation
             {
-                ResultCode = "PASS",
-                ResultPassed = true,
-                ResultMessage = _ResultMessage,
-                ResultDetail = _ResultDetail,
-                ResultDictionary = _ResultDictionary
+                resultCode = "PASS",
+                resultPassed = true,
+                resultMessage = _ResultMessage,
+                resultDetail = _ResultDetail,
+                resultDictionary = _ResultDictionary
             };
         }
 
-        public static ResultConfirmation resultBad(string _ResultMessage, string _ResultDetail = "", List<ItemKey> _ResultDictionary = null)
+        public static resultConfirmation resultBad(string _ResultMessage, string _ResultDetail = "", List<itemKey> _ResultDictionary = null)
         {
-            return new ResultConfirmation
+            return new resultConfirmation
             {
-                ResultCode = "FAIL",
-                ResultPassed = false,
-                ResultMessage = _ResultMessage,
-                ResultDetail = _ResultDetail,
-                ResultDictionary = _ResultDictionary
+                resultCode = "FAIL",
+                resultPassed = false,
+                resultMessage = _ResultMessage,
+                resultDetail = _ResultDetail,
+                resultDictionary = _ResultDictionary
             };
         }
     }
 
-    public class ResultConfirmationType : ObjectType<ResultConfirmation>
+    public class ResultConfirmationType : ObjectType<resultConfirmation>
     {
-        protected override void Configure(IObjectTypeDescriptor<ResultConfirmation> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<resultConfirmation> descriptor)
         {
 
-            descriptor.Field(t => t.ResultCode)
+            descriptor.Field(t => t.resultCode)
                 .Description("The response code of the result. PASS / FAIL");
 
-            descriptor.Field(t => t.ResultPassed)
+            descriptor.Field(t => t.resultPassed)
                 .Description("The status of the result: true / false");
 
-            descriptor.Field(t => t.ResultMessage)
+            descriptor.Field(t => t.resultMessage)
                 .Description("The message of the result");
 
-            descriptor.Field(t => t.ResultDetail)
+            descriptor.Field(t => t.resultDetail)
                 .Description("The detail of the result");
 
-            descriptor.Field(t => t.ResultDictionary)
+            descriptor.Field(t => t.resultDictionary)
                 .Type<ListType<ItemKeyType>>()
                 .Description("The dictionary of the result. Tag -> Value")
                 .Resolver(context =>
                 {
-                    return context.Parent<ResultConfirmation>().ResultDictionary;
+                    return context.Parent<resultConfirmation>().resultDictionary;
                 }
                 )
                 ;

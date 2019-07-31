@@ -16,7 +16,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class AddCommentToChatTxn_Input
     {
-        public Comment Comment { get; set; }
+        public comment Comment { get; set; }
     }
 
     public class AddCommentToChatTxn_InputType : InputObjectType<AddCommentToChatTxn_Input>
@@ -31,8 +31,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class AddCommentToChatTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Comment Comment { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public comment Comment { get; set; }
     }
 
     public class AddCommentToChatTxn_OutputType : ObjectType<AddCommentToChatTxn_Output>
@@ -51,12 +51,12 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<AddCommentToChatTxn_Output> Execute(AddCommentToChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true, IEventSender eventSender = null, IEventRegistry eventRegistry = null)
         {
             AddCommentToChatTxn_Output output = new AddCommentToChatTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
             DateTime nowUTC = DateTime.UtcNow;
-            List<Notification> notifications = new List<Notification>();
+            List<notification> notifications = new List<notification>();
 
             try
             {
@@ -85,16 +85,16 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     // Call Database to validate that: 1. ChatId exists 2. User Exists 3. User is part of the Company 4. User is Participant of the Chat
 
                     
-                    Chat chatDb0 = await contextMGT.Chat.Include(o => o.Participants)
-                        .Where(x => x.ChatId == input.Comment.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.Comment.UserAppId)))
+                    chat chatDb0 = await contextMGT.Chat.Include(o => o.participants)
+                        .Where(x => x.chatId == input.Comment.chatId)
+                        .Where(x => x.participants.Any(y => y.userAppId.Equals(input.Comment.userAppId)))
                         .FirstOrDefaultAsync();
 
 
-                    Chat chatDb = await contextMGT.Chat
-                        .Where(x => x.ChatId == input.Comment.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.Comment.UserAppId)))
-                        .Include(o => o.Participants)
+                    chat chatDb = await contextMGT.Chat
+                        .Where(x => x.chatId == input.Comment.chatId)
+                        .Where(x => x.participants.Any(y => y.userAppId.Equals(input.Comment.userAppId)))
+                        .Include(o => o.participants)
                         //.ThenInclude(i => i.User)                        
                         .FirstOrDefaultAsync();
 
@@ -115,16 +115,16 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     if (chatDb == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED");
                     }
 
                     // Find and validate user. Future: Create a transaction
 
-                    UserApp userApp = await contextMGT.UserApp.Where(x => x.UserAppId.Equals(input.Comment.UserAppId)).FirstOrDefaultAsync();
+                    userApp userApp = await contextMGT.UserApp.Where(x => x.userAppId.Equals(input.Comment.userAppId)).FirstOrDefaultAsync();
                     if (userApp == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_FOUND");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_FOUND");
                     }
 
 
@@ -133,24 +133,24 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** 1. Create the Comment (Atomic because is same Context DB)
 
                         // Update the Chat
-                        chatDb.UpdatedAt = nowUTC;
+                        chatDb.updatedAt = nowUTC;
                         contextMGT.Chat.Update(chatDb);
 
                         // Create the Chat To Save
-                        input.Comment.CommentId = 0;
-                        input.Comment.CreatedAt = DateTime.UtcNow;
+                        input.Comment.commentId = 0;
+                        input.Comment.createdAt = DateTime.UtcNow;
                         
                         // Create and Save the CommentInfo for each user. 
 
-                        var query = from user in chatDb.Participants
-                                    where !user.UserAppId.Equals(input.Comment.UserAppId)
-                                    select new CommentInfo { CommentInfoId = 0, CommentId = 0, CreatedAt = nowUTC, Delivered = false, Seen = false, UserAppId = user.UserAppId };
+                        var query = from user in chatDb.participants
+                                    where !user.userAppId.Equals(input.Comment.userAppId)
+                                    select new commentInfo { commentInfoId = 0, commentId = 0, createdAt = nowUTC, delivered = false, seen = false, userAppId = user.userAppId };
                         // the current user must be Seen = True; SeenAt = NowUTC
-                        CommentInfo ThisUser = new CommentInfo { CommentInfoId = 0, CommentId = 0, CreatedAt = nowUTC, Delivered = false, Seen = true, SeenAt = nowUTC, UserAppId = input.Comment.UserAppId };
+                        commentInfo ThisUser = new commentInfo { commentInfoId = 0, commentId = 0, createdAt = nowUTC, delivered = false, seen = true, seenAt = nowUTC, userAppId = input.Comment.userAppId };
 
-                        input.Comment.CommentsInfo = new List<CommentInfo>();
-                        input.Comment.CommentsInfo = query.ToList();
-                        input.Comment.CommentsInfo.Add(ThisUser);
+                        input.Comment.commentsInfo = new List<commentInfo>();
+                        input.Comment.commentsInfo = query.ToList();
+                        input.Comment.commentsInfo.Add(ThisUser);
 
                         // Save the chat to the context
                         contextMGT.Comment.Add(input.Comment);
@@ -166,25 +166,25 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                         // Save the notifications
 
-                        String chatGroup = (chatDb.Participants.Count > 1) ? chatDb.Name : "";
+                        String chatGroup = (chatDb.participants.Count > 1) ? chatDb.name : "";
                         
                         // Send to everyone except to himself
-                        var queryNotification = from user in chatDb.Participants
-                                                where user.UserAppId != userApp.UserAppId
-                                                select new Notification
+                        var queryNotification = from user in chatDb.participants
+                                                where user.userAppId != userApp.userAppId
+                                                select new notification
                                                 {
-                                                    NotificationId = 0,
-                                                    Type = "NewComment",
-                                                    Title = "*NewComment*",
-                                                    Subtitle = chatGroup,
-                                                    Body = chatGroup + " *has a new comment from* " + userApp.UserName,
-                                                    Message = input.Comment.Message,                                                                                                        
-                                                    ToUserAppId = user.UserAppId,
-                                                    Route = "Comment",
-                                                    RouteAction = "New",
-                                                    RouteId = input.Comment.CommentId.ToString(),
-                                                    CreatedAt = nowUTC,
-                                                    Seen = false
+                                                    notificationId = 0,
+                                                    type = "NewComment",
+                                                    title = "*NewComment*",
+                                                    subtitle = chatGroup,
+                                                    body = chatGroup + " *has a new comment from* " + userApp.userName,
+                                                    message = input.Comment.message,                                                                                                        
+                                                    toUserAppId = user.userAppId,
+                                                    route = "Comment",
+                                                    routeAction = "New",
+                                                    routeId = input.Comment.commentId.ToString(),
+                                                    createdAt = nowUTC,
+                                                    seen = false
                                                 };
 
                         notifications = queryNotification.ToList();
@@ -202,7 +202,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMMENT_SUCESSFULLY_CREATED"); // If OK                        
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "COMMENT_SUCESSFULLY_CREATED"); // If OK                        
                         output.Comment = input.Comment;                        
                     }// if (!error)
 
@@ -216,7 +216,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                         foreach (var notification in notifications)
                         {
-                            var result = eventSender.SendAsync(new OnEventMessageDefault<Notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: notification.ToUserAppId, outputType: notification));
+                            var result = eventSender.SendAsync(new OnEventMessageDefault<notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: notification.toUserAppId, outputType: notification));
                         }
 
                         /*
@@ -261,7 +261,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new AddCommentToChatTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

@@ -15,7 +15,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class GetCommentsFromChatTxn_Input
     {
-        public Chat Chat { get; set; }
+        public chat Chat { get; set; }
     }
 
     public class GetCommentsFromChatTxn_InputType : InputObjectType<GetCommentsFromChatTxn_Input>
@@ -30,8 +30,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class GetCommentsFromChatTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Chat Chat { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public chat Chat { get; set; }
     }
 
     public class GetCommentsFromChatTxn_OutputType : ObjectType<GetCommentsFromChatTxn_Output>
@@ -50,7 +50,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<GetCommentsFromChatTxn_Output> Execute(GetCommentsFromChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true)
         {
             GetCommentsFromChatTxn_Output output = new GetCommentsFromChatTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -70,14 +70,14 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                     // Call Database to validate that: 1. ChatId exists 2. User Exists 3. User is part of the Company 4. User is Participant of the Chat
 
-                    Chat chatDb = await contextMGT.Chat.Include(o => o.Participants)
-                        .Where(x => x.ChatId == input.Chat.ChatId)
+                    chat chatDb = await contextMGT.Chat.Include(o => o.participants)
+                        .Where(x => x.chatId == input.Chat.chatId)
                         .FirstOrDefaultAsync();
                     
                     if (chatDb == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "CHAT_DOES_NOT_EXIST");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "CHAT_DOES_NOT_EXIST");
                     }
                     
                     if ("1".Equals("2")) // This transaction is to Read
@@ -114,7 +114,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new GetCommentsFromChatTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

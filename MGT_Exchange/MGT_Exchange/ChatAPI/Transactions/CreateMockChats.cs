@@ -35,8 +35,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateMockChatsTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public List<Chat> Chats { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public List<chat> Chats { get; set; }
     }
 
     public class CreateMockChatsTxn_OutputType : ObjectType<CreateMockChatsTxn_Output>
@@ -55,7 +55,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<CreateMockChatsTxn_Output> Execute(CreateMockChatsTxn_Input input, IServiceProvider serviceProvider, MVCDbContext contextFather = null, bool autoCommit = true)
         {
             CreateMockChatsTxn_Output output = new CreateMockChatsTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -80,9 +80,9 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     // One way to do it: Try to save without validations, if constraints fail (inner update db update) then run queries to check what went wrong
 
                     // Call transaction to create a New Company
-                    CreateCompanyTxn_Input createCompanyTxn_Input = new CreateCompanyTxn_Input { Company = new Company { Name = input.CompanyName, Email = input.CompanyName + "@company.com", Password = input.CompanyName + "123" } };
+                    CreateCompanyTxn_Input createCompanyTxn_Input = new CreateCompanyTxn_Input { Company = new company { name = input.CompanyName, email = input.CompanyName + "@company.com", password = input.CompanyName + "123" } };
                     CreateCompanyTxn_Output createCompanyTxn = await new GraphQLMutation().CreateCompanyTxn(input: createCompanyTxn_Input, serviceProvider: serviceProvider);
-                    if (!createCompanyTxn.ResultConfirmation.ResultPassed)
+                    if (!createCompanyTxn.ResultConfirmation.resultPassed)
                     {
                         error = true;
                         output.ResultConfirmation = createCompanyTxn.ResultConfirmation;
@@ -93,9 +93,9 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     for (int i = 0; i < input.UsersToCreate; i++)
                     {
                         // Call transaction to create a New User
-                        CreateUserTxn_Input createUserTxn_Input = new CreateUserTxn_Input { User = new UserApp { UserName = i.ToString()+"_"+ createCompanyTxn.Company.CompanyId, Email = i.ToString() + "@User.com", Password = "1234567" }, Company = new Company { CompanyId = createCompanyTxn.Company.CompanyId } };
+                        CreateUserTxn_Input createUserTxn_Input = new CreateUserTxn_Input { User = new userApp { userName = i.ToString()+"_"+ createCompanyTxn.Company.companyId, email = i.ToString() + "@User.com", password = "1234567" }, Company = new company { companyId = createCompanyTxn.Company.companyId } };
                         CreateUserTxn_Output createUserTxn = await new GraphQLMutation().CreateUserTxn(input: createUserTxn_Input, serviceProvider: serviceProvider);
-                        if (!createUserTxn.ResultConfirmation.ResultPassed)
+                        if (!createUserTxn.ResultConfirmation.resultPassed)
                         {
                             error = true;
                             output.ResultConfirmation = createUserTxn.ResultConfirmation;
@@ -104,22 +104,22 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     }
 
                     // Create chats
-                    List<Chat> chatsNew = new List<Chat>();
+                    List<chat> chatsNew = new List<chat>();
                     for (int i = 0; i < input.ChatsToCreate; i++)
                     {
                         DateTime utcNow = DateTime.UtcNow;
                         // Create the chat
-                        Chat chat = new Chat { ChatId = 0, Name = "Chat " + i, CompanyId = createCompanyTxn.Company.CompanyId, CreatedAt = utcNow, UpdatedAt = utcNow, Type = "Chat" };
+                        chat chat = new chat { chatId = 0, name = "Chat " + i, companyId = createCompanyTxn.Company.companyId, createdAt = utcNow, updatedAt = utcNow, type = "Chat" };
 
                         // Add participants
-                        List<Participant> participants = (from user in contextMGT.UserApp
-                                                          where user.CompanyId.Equals(createCompanyTxn.Company.CompanyId)
-                                                         select new Participant { ParticipantId = 0, ChatId = 0, IsAdmin = false, UserAppId = user.UserAppId })
-                                                         .OrderBy(x => x.UserAppId)
+                        List<participant> participants = (from user in contextMGT.UserApp
+                                                          where user.companyId.Equals(createCompanyTxn.Company.companyId)
+                                                         select new participant { participantId = 0, chatId = 0, isAdmin = false, userAppId = user.userAppId })
+                                                         .OrderBy(x => x.userAppId)
                                                          .Take(input.UsersToCreate-i)
                                                          .ToList();
 
-                        chat.Participants = participants;
+                        chat.participants = participants;
 
                         /*
                         // Add comments Seen
@@ -152,25 +152,25 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         */
 
                         // Add one comment for each participant 
-                        List<Comment> commentsUnseen = (from part in participants
-                                                        select new Comment { CommentId = 0, ChatId = 0, Message = "Msg "+part.UserAppId, CreatedAt = utcNow, UserAppId = part.UserAppId })
+                        List<comment> commentsUnseen = (from part in participants
+                                                        select new comment { commentId = 0, chatId = 0, message = "Msg "+part.userAppId, createdAt = utcNow, userAppId = part.userAppId })
                                                      .ToList();
 
                         foreach (var comm in commentsUnseen)
                         {
                             // Create and Save the CommentInfo for each user. 
                             var query = from user in participants
-                                        select new CommentInfo { CommentInfoId = 0, CommentId = 0, CreatedAt = utcNow, Delivered = true, Seen = false, UserAppId = user.UserAppId };
+                                        select new commentInfo { commentInfoId = 0, commentId = 0, createdAt = utcNow, delivered = true, seen = false, userAppId = user.userAppId };
 
-                            comm.CommentsInfo = query.ToList();
+                            comm.commentsInfo = query.ToList();
                         }
 
-                        chat.Comments = commentsUnseen;
+                        chat.comments = commentsUnseen;
 
                         // Call transaction to create a New Chat
                         CreateChatTxn_Input createChatTxn_Input = new CreateChatTxn_Input { Chat = chat  };
                         CreateChatTxn_Output createChatTxn = await new GraphQLMutation().CreateChatTxn(input: createChatTxn_Input);
-                        if (!createChatTxn.ResultConfirmation.ResultPassed)
+                        if (!createChatTxn.ResultConfirmation.resultPassed)
                         {
                             error = true;
                             output.ResultConfirmation = createChatTxn.ResultConfirmation;
@@ -199,7 +199,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                     //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database                        
-                    output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_CREATED"); // If OK                        
+                    output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_CREATED"); // If OK                        
                     output.Chats = chatsNew;
                 }
                 finally
@@ -217,7 +217,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new CreateMockChatsTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

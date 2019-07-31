@@ -7,30 +7,30 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.ChatAPI.GraphQL
 {
-    public class NotificationType : ObjectType<Notification>
+    public class NotificationType : ObjectType<notification>
     {
-        protected override void Configure(IObjectTypeDescriptor<Notification> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<notification> descriptor)
         {
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.SeenAt)
+            descriptor.Field(t => t.seenAt)
                 .Type<DateTimeType>();
             
         }
     }
 
     // Leave it empty, HotChocolate will take care of it
-    public class NotificationInputType : InputObjectType<Notification>
+    public class NotificationInputType : InputObjectType<notification>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<Notification> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<notification> descriptor)
         {
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.SeenAt)
+            descriptor.Field(t => t.seenAt)
                 .Type<DateTimeType>();
 
         }

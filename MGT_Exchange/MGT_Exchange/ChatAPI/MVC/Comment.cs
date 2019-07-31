@@ -9,75 +9,35 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.ChatAPI.MVC
 {
-    public class Comment
+    public class comment
     {
         [Key]
-        public int CommentId { get; set; }
+        public int commentId { get; set; }
 
         [Required]
         [Display(Name = "Message")]
-        public string Message { get; set; }
+        public string message { get; set; }
 
-        public DateTime? CreatedAt { get; set; }
+        public DateTime? createdAt { get; set; }
 
-        public bool SeenByAll { get; set; } // Save it on Database, just to know if comment was seen by all participants
+        public bool seenByAll { get; set; } // Save it on Database, just to know if comment was seen by all participants
 
         // 1 to Many - Steven Sandersons
-        public int ChatId { get; set; }
-        [ForeignKey("ChatId")]        
+        public int chatId { get; set; }
+        [ForeignKey("chatId")]        
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual Chat Chat { get; set; }
+        public virtual chat chat { get; set; }
 
         // 1 to 1 - Steven Sandersons
-        public string UserAppId { get; set; }
-        [ForeignKey("UserAppId")]        
+        public string userAppId { get; set; }
+        [ForeignKey("userAppId")]        
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual UserApp User { get; set; }
+        public virtual userApp user { get; set; }
 
         // 1 to Many - Steven Sandersons
-        public virtual List<CommentInfo> CommentsInfo { get; set; }
+        public virtual List<commentInfo> commentsInfo { get; set; }
 
         
-        /*
-        // Instead of all this combinations, just add one column for Status: Sent, Delivered to All, Seen by All. (update the comment record using the users connections)
-        [NotMapped]
-        public int UsersTotal
-        {
-            get
-            {
-                if (this.CommentsInfo == null)
-                    return -1;
-                else
-                    return this.CommentsInfo.Count();
-            }
-        }
-
-        [NotMapped]
-        public int UsersDeliveredTo
-        {
-            get
-            {
-                if (this.CommentsInfo == null)
-                    return -1;
-                else
-                    return this.CommentsInfo.Where(x => x.Delivered == true).Count();
-            }
-        }
-
-        [NotMapped]
-        public int UsersSeenBy
-        {
-            get {
-                if (this.CommentsInfo == null)
-                    return -1;
-                else
-                    return this.CommentsInfo.Where(x => x.Seen == true).Count();
-            }
-        }
-
-    */
-
-
 
     }
 }

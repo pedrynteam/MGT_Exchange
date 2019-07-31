@@ -19,7 +19,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class RetrieveMasterInformationByUser_Input
     {
-        public UserApp User { get; set; }
+        public userApp User { get; set; }
         public int ChatsRecentTake { get; set; }
         public int CommentsSeenTake { get; set; }
         public int CommentsUnseenTake { get; set; }
@@ -58,11 +58,11 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class RetrieveMasterInformationByUser_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public List<Chat> ChatsRecent { get; set; }
-        public List<Comment> CommentsUnseen { get; set; }
-        public List<Comment> CommentsSeen { get; set; }
-        public List<Comment> CommentsNewest { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public List<chat> ChatsRecent { get; set; }
+        public List<comment> CommentsUnseen { get; set; }
+        public List<comment> CommentsSeen { get; set; }
+        public List<comment> CommentsNewest { get; set; }
     }
 
     public class RetrieveMasterInformationByUser_OutputType : ObjectType<RetrieveMasterInformationByUser_Output>
@@ -81,7 +81,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<RetrieveMasterInformationByUser_Output> Execute(RetrieveMasterInformationByUser_Input input, MVCDbContext contextFather = null, bool autoCommit = true, IEventSender eventSender = null)
         {
             RetrieveMasterInformationByUser_Output output = new RetrieveMasterInformationByUser_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -136,21 +136,21 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                     if (input.ChatsRecentTake > 0)
                     {
-                        List<Chat> chats = new List<Chat>();
+                        List<chat> chats = new List<chat>();
 
                         if (input.FindSpecificChatId > 0)
                         {
                             chats = await contextMGT.Chat
-                                .Where(x => x.ChatId == input.FindSpecificChatId)
-                                .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))
-                                .OrderByDescending(x => x.UpdatedAt)
+                                .Where(x => x.chatId == input.FindSpecificChatId)
+                                .Where(x => x.participants.Any(y => y.userAppId.Equals(input.User.userAppId)))
+                                .OrderByDescending(x => x.updatedAt)
                                 .ToListAsync();
                         }
                         else // Find recent Chats
                         {
                             chats = await contextMGT.Chat
-                            .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))
-                            .OrderByDescending(x => x.UpdatedAt)
+                            .Where(x => x.participants.Any(y => y.userAppId.Equals(input.User.userAppId)))
+                            .OrderByDescending(x => x.updatedAt)
                             .Take(input.ChatsRecentTake)
                             .ToListAsync();
                         }
@@ -158,14 +158,14 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         if (chats.Count == 0)
                         {
                             error = true;
-                            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "CHAT_NOT_FOUND_ERROR");
+                            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "CHAT_NOT_FOUND_ERROR");
                             return output;
                         }
                         
                         output.ChatsRecent = chats;
 
                         List<int> chatIds = chats
-                                .GroupBy(g => g.ChatId)
+                                .GroupBy(g => g.chatId)
                                 .Select(user => user.Key) // extract unique Ids from users    
                                 .ToList();
 
@@ -173,14 +173,14 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         {                            
                             // To me, this feels like E=mc^2 .. an incredibly simple solution to a relatively complex problem
                             var rankUnseen = contextMGT.Comment
-                                .Where(x => chatIds.Contains(x.ChatId))
-                                .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == false))
-                                .GroupBy(d => d.ChatId)
-                                .SelectMany(g => g.OrderBy(y => y.CommentId)
+                                .Where(x => chatIds.Contains(x.chatId))
+                                .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == false))
+                                .GroupBy(d => d.chatId)
+                                .SelectMany(g => g.OrderBy(y => y.commentId)
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
                                 .Where(y => y.Rank <= input.CommentsUnseenTake);
 
-                            output.CommentsUnseen = rankUnseen.Select(x => x.Item).OrderBy(o => o.ChatId).OrderBy(o => o.ChatId).ThenBy(o => o.CommentId).ToList();
+                            output.CommentsUnseen = rankUnseen.Select(x => x.Item).OrderBy(o => o.chatId).OrderBy(o => o.chatId).ThenBy(o => o.commentId).ToList();
                             
                             // New Logic hybrid communication. If there are unseen messages show: 5- messages Seen, 2+ messages Unseen. Else: 10 messages unseen                           
                             // Do one extra query to get the N Messages bofere the unseen.
@@ -189,20 +189,20 @@ namespace MGT_Exchange.ChatAPI.Transactions
                             {
                                 
                                 var rankSeenBefore = contextMGT.Comment
-                                .Where(x => chatIds.Contains(x.ChatId))
-                                .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == true)) // No need we know it's seen
-                                .Where(x => x.CommentId < (from inner in contextMGT.Comment where inner.ChatId == x.ChatId where inner.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == false) select inner.CommentId).Min())
-                                .GroupBy(d => d.ChatId)
-                                .SelectMany(g => g.OrderByDescending(y => y.CommentId)
+                                .Where(x => chatIds.Contains(x.chatId))
+                                .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == true)) // No need we know it's seen
+                                .Where(x => x.commentId < (from inner in contextMGT.Comment where inner.chatId == x.chatId where inner.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == false) select inner.commentId).Min())
+                                .GroupBy(d => d.chatId)
+                                .SelectMany(g => g.OrderByDescending(y => y.commentId)
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))
                                 .Where(y => y.Rank <= input.CommentsBeforeUnseenTake)
                                 ;
                                 
-                                output.CommentsUnseen = output.CommentsUnseen.Union(rankSeenBefore.Select(x => x.Item).ToList()).OrderBy(x => x.ChatId).ThenBy(x => x.CommentId).ToList();
+                                output.CommentsUnseen = output.CommentsUnseen.Union(rankSeenBefore.Select(x => x.Item).ToList()).OrderBy(x => x.chatId).ThenBy(x => x.commentId).ToList();
 
                                 foreach (var value in rankSeenBefore)
                                 {
-                                    Debug.WriteLine("Rank Seen Before: " + value.Rank + " Key: " + value.Rank + " ChatId: " + value.Item.ChatId + " CommentId: " + value.Item.CommentId);
+                                    Debug.WriteLine("Rank Seen Before: " + value.Rank + " Key: " + value.Rank + " ChatId: " + value.Item.chatId + " CommentId: " + value.Item.commentId);
                                 }
 
                             }
@@ -215,23 +215,23 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         {
                             // Query N Newest Read Messages                       
                             var CommentsSeen = await contextMGT.Comment
-                            .Where(x => chatIds.Contains(x.ChatId))
-                            .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == true))
-                            .OrderByDescending(y => y.CommentId)
+                            .Where(x => chatIds.Contains(x.chatId))
+                            .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == true))
+                            .OrderByDescending(y => y.commentId)
                             .Take(input.CommentsSeenTake)
                             .ToListAsync();
 
-                            output.CommentsSeen = CommentsSeen.OrderBy(x => x.ChatId).ThenBy(x => x.CommentId).ToList();
+                            output.CommentsSeen = CommentsSeen.OrderBy(x => x.chatId).ThenBy(x => x.commentId).ToList();
 
                             var rank = contextMGT.Comment    
-                                .Where(x => chatIds.Contains(x.ChatId))
-                                .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == true))
-                                .GroupBy(d => d.ChatId)    
-                                .SelectMany(g => g.OrderByDescending(y => y.CommentId)    
+                                .Where(x => chatIds.Contains(x.chatId))
+                                .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == true))
+                                .GroupBy(d => d.chatId)    
+                                .SelectMany(g => g.OrderByDescending(y => y.commentId)    
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))    
                                 .Where(y => y.Rank <= input.CommentsSeenTake);
 
-                            output.CommentsSeen = rank.Select(x => x.Item).OrderBy(o => o.ChatId).ThenBy(o => o.CommentId).ToList();
+                            output.CommentsSeen = rank.Select(x => x.Item).OrderBy(o => o.chatId).ThenBy(o => o.commentId).ToList();
                         }
 
                         if (input.CommentsNewestTake > 0)
@@ -249,9 +249,9 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
 
                             var rank = contextMGT.Comment
-                                .Where(x => chatIds.Contains(x.ChatId))
-                                .GroupBy(d => d.ChatId)                   
-                                .SelectMany(g => g.OrderByDescending(y => y.CommentId)
+                                .Where(x => chatIds.Contains(x.chatId))
+                                .GroupBy(d => d.chatId)                   
+                                .SelectMany(g => g.OrderByDescending(y => y.commentId)
                                 .Select((x, i) => new { g.Key, Item = x, Rank = i + 1 }))                                     
                                 .Where(y => y.Rank <= input.CommentsNewestTake);
                             
@@ -260,7 +260,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                                 Debug.WriteLine("Rank: " + value.Rank + " Key: " + value.Rank + " Chat: " + value.Item.ChatId + " Comment: " + value.Item.CommentId);
                             }//*/
 
-                            output.CommentsNewest = rank.Select(x => x.Item).OrderBy(o => o.ChatId).ThenBy(o => o.CommentId).ToList();
+                            output.CommentsNewest = rank.Select(x => x.Item).OrderBy(o => o.chatId).ThenBy(o => o.commentId).ToList();
 
                         }
 
@@ -290,14 +290,14 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         // Convert the top N Comments to Seen
                         List<int> toMarkAsSeen = new List<int> { 68, 69, 70, 71 };
 
-                        List<CommentInfo> comme = await contextMGT.CommentInfo
-                            .Where(x => toMarkAsSeen.Contains(x.CommentId))
+                        List<commentInfo> comme = await contextMGT.CommentInfo
+                            .Where(x => toMarkAsSeen.Contains(x.commentId))
                             .ToListAsync();
 
                         foreach (var com in comme)
                         {
-                            com.Seen = true;
-                            com.SeenAt = DateTime.UtcNow;
+                            com.seen = true;
+                            com.seenAt = DateTime.UtcNow;
                             contextMGT.Update(com);
                         }
                         await contextMGT.SaveChangesAsync();
@@ -363,7 +363,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                     //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
                     if (!error)
                     {
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "INFORMATION_SUCESSFULLY_RETRIEVED"); // If OK                        
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "INFORMATION_SUCESSFULLY_RETRIEVED"); // If OK                        
                     }
 
                     if ("1".Equals("2")) // This transaction is to Read
@@ -400,7 +400,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new RetrieveMasterInformationByUser_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

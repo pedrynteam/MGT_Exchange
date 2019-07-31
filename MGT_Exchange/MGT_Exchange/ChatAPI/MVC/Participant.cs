@@ -9,26 +9,24 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.ChatAPI.MVC
 {
-    public class Participant
+    public class participant
     {
         [Key]
-        public int ParticipantId { get; set; }
-
-        [Required]
-        [Display(Name = "IsAdmin")]
-        public bool IsAdmin { get; set; }
+        public int participantId { get; set; }
+        
+        public bool isAdmin { get; set; }
         
         // 1 to Many - Steven Sandersons
-        public int ChatId { get; set; }
-        [ForeignKey("ChatId")]
+        public int chatId { get; set; }
+        [ForeignKey("chatId")]
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual Chat Chat { get; set; }
+        public virtual chat chat { get; set; }
 
         // 1 to 1 - Steven Sandersons
-        public string UserAppId { get; set; }
-        [ForeignKey("UserAppId")]
+        public string userAppId { get; set; }
+        [ForeignKey("userAppId")]
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual UserApp User { get; set; }
+        public virtual userApp user { get; set; }
         
     }
 }

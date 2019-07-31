@@ -31,7 +31,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateIdentityUserTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
         public IdentityUser IdentityUser { get; set; }
         public String Token { get; set; } // This will contain the token created if everything goes ok        
     }
@@ -52,7 +52,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
         public async Task<CreateIdentityUserTxn_Output> Execute(CreateIdentityUserTxn_Input input, IServiceProvider serviceProvider, ApplicationDbContext contextFather = null, bool autoCommit = true)
         {
             CreateIdentityUserTxn_Output _output = new CreateIdentityUserTxn_Output();
-            _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -78,15 +78,15 @@ namespace MGT_Exchange.AuthAPI.Transactions
                     if (!result.Succeeded)
                     {
                         error = true;
-                        _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
-                        List<ItemKey> resultKeys = new List<ItemKey>();
+                        _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
+                        List<itemKey> resultKeys = new List<itemKey>();
 
                         foreach (var errorDesc in result.Errors)
                         {
-                            resultKeys.Add(new ItemKey(errorDesc.Code, errorDesc.Description));
+                            resultKeys.Add(new itemKey(errorDesc.Code, errorDesc.Description));
                         }
 
-                        _output.ResultConfirmation.ResultDictionary = resultKeys;
+                        _output.ResultConfirmation.resultDictionary = resultKeys;
 
                     }
 
@@ -106,7 +106,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         var tokenString = "";
                         CreateTokenTxn_Input createTokenTxn_Input = new CreateTokenTxn_Input { userAppId = user.Id };
                         CreateTokenTxn_Output createTokenTxn = await new GraphQLMutation().CreateTokenTxn(input: createTokenTxn_Input, serviceProvider: serviceProvider);
-                        if (createTokenTxn.resultConfirmation.ResultPassed)
+                        if (createTokenTxn.resultConfirmation.resultPassed)
                         {
                             tokenString = createTokenTxn.token;
                         }
@@ -121,7 +121,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        _output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "USER_SUCESSFULLY_CREATED"); // If OK
+                        _output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "USER_SUCESSFULLY_CREATED"); // If OK
                         _output.Token = tokenString; // The token
                         input.IdentityUser.PasswordHash = ""; // Dont return the password
                         input.IdentityUser.Id = user.Id;
@@ -143,7 +143,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 _output = new CreateIdentityUserTxn_Output(); // Restart variable to avoid returning any already saved data
-                _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

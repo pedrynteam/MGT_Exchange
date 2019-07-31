@@ -20,8 +20,8 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class CreateUsersForCompanyTxn_Input
     {
-        public List<UserApp> Users { get; set; }
-        public Company Company { get; set; }
+        public List<userApp> Users { get; set; }
+        public company Company { get; set; }
     }
 
     public class CreateUsersForCompanyTxn_InputType : InputObjectType<CreateUsersForCompanyTxn_Input>
@@ -38,8 +38,8 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateUsersForCompanyTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Company Company { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public company Company { get; set; }
     }
 
     public class CreateUsersForCompanyTxn_OutputType : ObjectType<CreateUsersForCompanyTxn_Output>
@@ -58,7 +58,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
         public async Task<CreateUsersForCompanyTxn_Output> Execute(CreateUsersForCompanyTxn_Input input, IServiceProvider serviceProvider, MVCDbContext contextFatherMVC = null, ApplicationDbContext contextFatherApp = null, bool autoCommit = true)
         {
             CreateUsersForCompanyTxn_Output _output = new CreateUsersForCompanyTxn_Output();
-            _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
             //String userType = "User";
 
             // Error handling
@@ -79,12 +79,12 @@ namespace MGT_Exchange.AuthAPI.Transactions
                     //***** 0. Make The Validations - Be careful : Concurrency. Same name can be saved multiple times if called at the exact same time. Better have an alternate database constraint
 
                     //Company company = await contextMVC.Company.Where(x => x.Id.Equals(input.Company.Id)).FirstOrDefaultAsync();
-                    Company company = await contextMVC.Company.Where(x => x.CompanyId.Equals(input.Company.CompanyId)).FirstOrDefaultAsync();
+                    company company = await contextMVC.Company.Where(x => x.companyId.Equals(input.Company.companyId)).FirstOrDefaultAsync();
 
                     if (company == null)
                     {
                         error = true;
-                        _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "COMPANY_DOES_NOT_EXIST_ERROR", _ResultDetail: ""); 
+                        _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "COMPANY_DOES_NOT_EXIST_ERROR", _ResultDetail: ""); 
 
                     }
 
@@ -142,9 +142,9 @@ namespace MGT_Exchange.AuthAPI.Transactions
 
                         foreach(var toSave in input.Users)
                         {
-                            toSave.UserAppId = "TBD"; // To create Key
-                            toSave.Password = ""; // Dont return the password                            
-                            toSave.TokenAuth = "";
+                            toSave.userAppId = "TBD"; // To create Key
+                            toSave.password = ""; // Dont return the password                            
+                            toSave.tokenAuth = "";
 
                             contextMVC.UserApp.Add(toSave);
                         }
@@ -162,7 +162,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        _output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "USER_SUCESSFULLY_CREATED"); // If OK
+                        _output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "USER_SUCESSFULLY_CREATED"); // If OK
                         //_output.token = tokenString; // The token                        
                         //_output.user = input.user;
                     }// if (!error)
@@ -186,7 +186,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 _output = new CreateUsersForCompanyTxn_Output(); // Restart variable to avoid returning any already saved data
-                _output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                _output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

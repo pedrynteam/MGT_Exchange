@@ -18,8 +18,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class LoadChatAndUpdateUnseenForUserTxn_Input
     {
-        public Chat Chat { get; set; }
-        public UserApp User { get; set; }
+        public chat Chat { get; set; }
+        public userApp User { get; set; }
         public int Take { get; set; }
     }
 
@@ -42,8 +42,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class LoadChatAndUpdateUnseenForUserTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public List<Comment> Comments { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public List<comment> Comments { get; set; }
     }
 
     public class LoadChatAndUpdateUnseenForUserTxn_OutputType : ObjectType<LoadChatAndUpdateUnseenForUserTxn_Output>
@@ -62,13 +62,13 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<LoadChatAndUpdateUnseenForUserTxn_Output> Execute(LoadChatAndUpdateUnseenForUserTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true, IEventSender eventSender = null, IEventRegistry eventRegistry = null)
         {
             LoadChatAndUpdateUnseenForUserTxn_Output output = new LoadChatAndUpdateUnseenForUserTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
             DateTime nowUTC = DateTime.UtcNow;
-            List<Notification> notifications = new List<Notification>();
-            List<Comment> allSeen = new List<Comment>();
+            List<notification> notifications = new List<notification>();
+            List<comment> allSeen = new List<comment>();
 
             try
             {
@@ -85,15 +85,15 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                     // Call database to validate ChatId and UserId existance or just try to execute the query and if it fails is because one of those is wrong
                     
-                    Chat chatDb = await contextMGT.Chat
-                        .Where(x => x.ChatId == input.Chat.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))                        
+                    chat chatDb = await contextMGT.Chat
+                        .Where(x => x.chatId == input.Chat.chatId)
+                        .Where(x => x.participants.Any(y => y.userAppId.Equals(input.User.userAppId)))                        
                         .FirstOrDefaultAsync();
 
                     if (chatDb == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED_ERROR", _ResultDetail: "");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED_ERROR", _ResultDetail: "");
                         return output;
                     }
                     
@@ -104,26 +104,26 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         bool someAllseen = false;
                         
                         output.Comments = await contextMGT.Comment
-                            .Where(x => x.ChatId == chatDb.ChatId)
-                            .Where(x => x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId) && y.Seen == false))
-                            .OrderBy(o => o.CommentId)
+                            .Where(x => x.chatId == chatDb.chatId)
+                            .Where(x => x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId) && y.seen == false))
+                            .OrderBy(o => o.commentId)
                             .Take(input.Take)
                             .ToListAsync();
 
                         if (output.Comments.Count() > 0)
                         {                            
                             // Update the commentsInfo to the context
-                            List<int> keys = output.Comments.Select(y => y.CommentId).ToList();
+                            List<int> keys = output.Comments.Select(y => y.commentId).ToList();
 
-                            List<CommentInfo> details = await contextMGT.CommentInfo
-                                .Where(x => keys.Contains(x.CommentId))
-                                .Where(x => x.UserAppId.Equals(input.User.UserAppId))
+                            List<commentInfo> details = await contextMGT.CommentInfo
+                                .Where(x => keys.Contains(x.commentId))
+                                .Where(x => x.userAppId.Equals(input.User.userAppId))
                                 .ToListAsync();
                             
                             details.ForEach(x =>
                             {
-                                x.Seen = true;
-                                x.SeenAt = nowUTC;
+                                x.seen = true;
+                                x.seenAt = nowUTC;
                             });
 
                             contextMGT.CommentInfo.UpdateRange(details);
@@ -132,15 +132,15 @@ namespace MGT_Exchange.ChatAPI.Transactions
                             await contextMGT.SaveChangesAsync(); //
 
                             allSeen = await contextMGT.Comment
-                                .Include(i => i.CommentsInfo)
-                                .Where(x => keys.Contains(x.CommentId))
-                                .Where(x => x.CommentsInfo.Count() == x.CommentsInfo.Count(y => y.Seen == true))
+                                .Include(i => i.commentsInfo)
+                                .Where(x => keys.Contains(x.commentId))
+                                .Where(x => x.commentsInfo.Count() == x.commentsInfo.Count(y => y.seen == true))
                                 .ToListAsync();
 
                             if (allSeen.Count() > 0)
                             {
                                 someAllseen = true;
-                                allSeen.ForEach(x => x.SeenByAll = true);
+                                allSeen.ForEach(x => x.seenByAll = true);
                                 contextMGT.UpdateRange(allSeen);
                                 await contextMGT.SaveChangesAsync();
                             }
@@ -149,10 +149,10 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         else // Get the N newest seen comments if any
                         {
                             output.Comments = await contextMGT.Comment
-                            .Where(x => x.ChatId == chatDb.ChatId)                            
-                            .OrderByDescending(o => o.CommentId)
+                            .Where(x => x.chatId == chatDb.chatId)                            
+                            .OrderByDescending(o => o.commentId)
                             .Take(input.Take)
-                            .OrderBy(o => o.CommentId) // Reorder
+                            .OrderBy(o => o.commentId) // Reorder
                             .ToListAsync();
                         }
                         
@@ -174,32 +174,32 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         if (someAllseen)
                         {
                             // Send the message for himself too, it's the way to know which message has been seen by all
-                            List<Comment> CommentsIds = (from ids in allSeen
-                                                        select new Comment
+                            List<comment> CommentsIds = (from ids in allSeen
+                                                        select new comment
                                                         {
-                                                            CommentId = ids.CommentId,
-                                                            ChatId = ids.ChatId,
-                                                            SeenByAll = ids.SeenByAll
+                                                            commentId = ids.commentId,
+                                                            chatId = ids.chatId,
+                                                            seenByAll = ids.seenByAll
                                                         }).ToList();
 
                             // Create a Notification for each user                                                       
                             var queryNotification = from user in contextMGT.Participant
-                                                    where user.ChatId == chatDb.ChatId
+                                                    where user.chatId == chatDb.chatId
                                                     // where user.UserAppId != input.User.UserAppId // Send the message for himself too, because this include previous all seen messages
-                                                    select new Notification
+                                                    select new notification
                                                     {
-                                                        NotificationId = 0,
-                                                        Type = "CommentSeen",
-                                                        Title = "*CommentSeen*",
-                                                        Subtitle = "",
-                                                        Body = JsonConvert.SerializeObject(CommentsIds),
-                                                        Message = "COMMENTS_SEEN",
-                                                        ToUserAppId = user.UserAppId,
-                                                        Route = "Comment",
-                                                        RouteAction = "Seen",
-                                                        RouteId = user.ChatId.ToString(),
-                                                        CreatedAt = nowUTC,
-                                                        Seen = false
+                                                        notificationId = 0,
+                                                        type = "CommentSeen",
+                                                        title = "*CommentSeen*",
+                                                        subtitle = "",
+                                                        body = JsonConvert.SerializeObject(CommentsIds),
+                                                        message = "COMMENTS_SEEN",
+                                                        toUserAppId = user.userAppId,
+                                                        route = "Comment",
+                                                        routeAction = "Seen",
+                                                        routeId = user.chatId.ToString(),
+                                                        createdAt = nowUTC,
+                                                        seen = false
                                                     };
 
 
@@ -219,7 +219,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMMENTS_SUCESSFULLY_SEEN"); // If OK                        
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "COMMENTS_SUCESSFULLY_SEEN"); // If OK                        
                         
                     }// if (!error)
 
@@ -228,7 +228,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         // Send the notification to each user * New Logic *                        
                         foreach (var notification in notifications)
                         {
-                            var result = eventSender.SendAsync(new OnEventMessageDefault<Notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: notification.ToUserAppId, outputType: notification));
+                            var result = eventSender.SendAsync(new OnEventMessageDefault<notification>(eventName: "onNotificationToUser", argumentTag: "userAppId", argumentValue: notification.toUserAppId, outputType: notification));
                         }
                         
                     }
@@ -249,7 +249,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new LoadChatAndUpdateUnseenForUserTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

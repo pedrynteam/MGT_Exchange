@@ -6,27 +6,27 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.GraphQLActions.Resources
 {
-    public class ItemKey
+    public class itemKey
     {
-        public string Tag { get; set; }
-        public string Value { get; set; }
+        public string tag { get; set; }
+        public string value { get; set; }
 
-        public ItemKey(string tag, string value)
+        public itemKey(string _tag, string _value)
         {
-            Tag = tag;
-            Value = value;
+            tag = _tag;
+            value = _value;
         }
     }
 
-    public class ItemKeyType : ObjectType<ItemKey>
+    public class ItemKeyType : ObjectType<itemKey>
     {
-        protected override void Configure(IObjectTypeDescriptor<ItemKey> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<itemKey> descriptor)
         {
-            descriptor.Field(t => t.Tag)
+            descriptor.Field(t => t.tag)
                 .Description("The Tag of the Result List")
                 ;
 
-            descriptor.Field(t => t.Value)
+            descriptor.Field(t => t.value)
                 .Description("The Value of the Result List")
                 ;
         }

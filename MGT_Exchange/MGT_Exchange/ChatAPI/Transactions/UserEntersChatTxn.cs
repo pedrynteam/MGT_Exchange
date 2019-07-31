@@ -19,8 +19,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     public class UserEntersChatTxn_Input
     {
         // Use the Model just to avoid changes needed in the future
-        public Chat Chat { get; set; }
-        public UserApp User { get; set; }
+        public chat Chat { get; set; }
+        public userApp User { get; set; }
     }
 
     public class UserEntersChatTxn_InputType : InputObjectType<UserEntersChatTxn_Input>
@@ -37,8 +37,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class UserEntersChatTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Chat Chat { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public chat Chat { get; set; }
     }
 
     public class UserEntersChatTxn_OutputType : ObjectType<UserEntersChatTxn_Output>
@@ -57,7 +57,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<UserEntersChatTxn_Output> Execute(UserEntersChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true, IEventSender eventSender = null)
         {
             UserEntersChatTxn_Output output = new UserEntersChatTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -93,16 +93,16 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
 
                     // Chat exists and the user belong to this Chat
-                    Chat chatDb = await contextMGT.Chat.Include(o => o.Participants)
-                        .Where(x => x.ChatId == input.Chat.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.User.UserAppId)))
+                    chat chatDb = await contextMGT.Chat.Include(o => o.participants)
+                        .Where(x => x.chatId == input.Chat.chatId)
+                        .Where(x => x.participants.Any(y => y.userAppId.Equals(input.User.userAppId)))
                         .FirstOrDefaultAsync();
                     ;
 
                     if (chatDb == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_AUTHORIZED");
                     }
 
                     /* Find the pending comments to be read for the user. There are two types
@@ -124,15 +124,15 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         // Save the chat to the context
                         DateTime nowUTC = DateTime.UtcNow;
 
-                        List<Comment> commentsToReadNoExist = await contextMGT.Comment.Include(o => o.CommentsInfo)    
-                            .Where(x => x.ChatId == input.Chat.ChatId)    
-                            .Where(x => !x.CommentsInfo.Any(y => y.UserAppId.Equals(input.User.UserAppId)))    
+                        List<comment> commentsToReadNoExist = await contextMGT.Comment.Include(o => o.commentsInfo)    
+                            .Where(x => x.chatId == input.Chat.chatId)    
+                            .Where(x => !x.commentsInfo.Any(y => y.userAppId.Equals(input.User.userAppId)))    
                             .ToListAsync();
                         ;
 
                         foreach (var comment in commentsToReadNoExist)
                         {
-                            CommentInfo commentInfo = new CommentInfo { CommentInfoId = 0, CommentId = comment.CommentId, Delivered = true, DeliveredAt = nowUTC, Seen = true, SeenAt = nowUTC, UserAppId = input.User.UserAppId };
+                            commentInfo commentInfo = new commentInfo { commentInfoId = 0, commentId = comment.commentId, delivered = true, deliveredAt = nowUTC, seen = true, seenAt = nowUTC, userAppId = input.User.userAppId };
                             contextMGT.CommentInfo.Add(commentInfo);
                         }
                          
@@ -149,9 +149,9 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_FOUND"); // If OK                        
-                        chatDb.Comments = new List<Comment>();
-                        chatDb.Comments = commentsToReadNoExist;
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_FOUND"); // If OK                        
+                        chatDb.comments = new List<comment>();
+                        chatDb.comments = commentsToReadNoExist;
                         output.Chat = chatDb;
                     }// if (!error)
 
@@ -176,7 +176,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new UserEntersChatTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

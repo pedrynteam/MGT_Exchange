@@ -16,7 +16,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class CreateChatTxn_Input
     {
-        public Chat Chat { get; set; }
+        public chat Chat { get; set; }
     }
 
     public class CreateChatTxn_InputType : InputObjectType<CreateChatTxn_Input>
@@ -31,8 +31,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateChatTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Chat Chat { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public chat Chat { get; set; }
     }
 
     public class CreateChatTxn_OutputType : ObjectType<CreateChatTxn_Output>
@@ -51,7 +51,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<CreateChatTxn_Output> Execute(CreateChatTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true)
         {
             CreateChatTxn_Output output = new CreateChatTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -76,12 +76,12 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                     // One way to do it: Try to save without validations, if constraints fail (inner update db update) then run queries to check what went wrong
 
-                    Company companyDb = await contextMGT.Company.Where(x => x.CompanyId.Equals(input.Chat.CompanyId)).FirstOrDefaultAsync();
+                    company companyDb = await contextMGT.Company.Where(x => x.companyId.Equals(input.Chat.companyId)).FirstOrDefaultAsync();
 
                     if (companyDb == null)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "COMPANY_DOES_NOT_EXIST_ERROR", _ResultDetail: "");
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "COMPANY_DOES_NOT_EXIST_ERROR", _ResultDetail: "");
                     }
 
                     // Try to find a Chat already crated for the same users. If the chat exists, return the chat
@@ -92,23 +92,23 @@ namespace MGT_Exchange.ChatAPI.Transactions
 
                         //***** 0. Validate if the Chat exists, so return that Chat
 
-                        List<String> userIds = input.Chat.Participants
-                            .GroupBy(g => g.UserAppId)
+                        List<String> userIds = input.Chat.participants
+                            .GroupBy(g => g.userAppId)
                             .Select(user => user.Key) // extract unique Ids from users    
                             .ToList();
 
-                        Chat chatDb = await contextMGT.Chat.Include(o => o.Participants)
-                            .Where(company => company.CompanyId == input.Chat.CompanyId) // It's the same company
-                            .Where(x => x.Participants.Count == input.Chat.Participants.Count) // Have the same number of users
-                            .Where(x => x.Participants.All(users => userIds.Contains(users.UserAppId))) // Have the same users by Id
+                        chat chatDb = await contextMGT.Chat.Include(o => o.participants)
+                            .Where(company => company.companyId == input.Chat.companyId) // It's the same company
+                            .Where(x => x.participants.Count == input.Chat.participants.Count) // Have the same number of users
+                            .Where(x => x.participants.All(users => userIds.Contains(users.userAppId))) // Have the same users by Id
                             .FirstOrDefaultAsync();
 
                         if (chatDb != null)
                         {
                             chatFound = true;
-                            chatDb.UpdatedAt = nowUTC;
+                            chatDb.updatedAt = nowUTC;
 
-                            input.Chat.Comments = null;
+                            input.Chat.comments = null;
 
                             /* Dont save comments during Create Chat
                              * 
@@ -123,7 +123,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                             }
                             */
 
-                            output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_FOUND"); // If Found
+                            output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_FOUND"); // If Found
                             output.Chat = chatDb;
                         }
 
@@ -131,18 +131,18 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         if (!chatFound)
                         {
                             // Create the Chat To Save                            
-                            input.Chat.ChatId = 0;
-                            input.Chat.CreatedAt = nowUTC;
-                            input.Chat.UpdatedAt = nowUTC;
+                            input.Chat.chatId = 0;
+                            input.Chat.createdAt = nowUTC;
+                            input.Chat.updatedAt = nowUTC;
 
-                            if (input.Chat.Comments != null)
+                            if (input.Chat.comments != null)
                             {
-                                input.Chat.Comments.ForEach(x => x.CreatedAt = nowUTC);
+                                input.Chat.comments.ForEach(x => x.createdAt = nowUTC);
                             }
 
                             // Save the chat to the context
                             contextMGT.Chat.Add(input.Chat);
-                            output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_CREATED"); // If OK                        
+                            output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "CHAT_SUCESSFULLY_CREATED"); // If OK                        
                             output.Chat = input.Chat;
                         }
 
@@ -174,7 +174,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new CreateChatTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

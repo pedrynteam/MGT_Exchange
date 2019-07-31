@@ -26,21 +26,21 @@ namespace MGT_Exchange.GraphQLActions
         }
 
         // Get all users for a Company by CompanyID
-        public async Task<Company> GetCompanyAsync(string id)
+        public async Task<company> GetCompanyAsync(string id)
         {
-            return await contextMVC.Company.Where(q => q.CompanyId.Equals(id)).FirstOrDefaultAsync();
+            return await contextMVC.Company.Where(q => q.companyId.Equals(id)).FirstOrDefaultAsync();
         }
 
         // Get Comment by id
-        public async Task<Comment> GetCommentAsync(int id)
+        public async Task<comment> GetCommentAsync(int id)
         {
-            return await contextMVC.Comment.Where(q => q.CommentId == id).FirstOrDefaultAsync();
+            return await contextMVC.Comment.Where(q => q.commentId == id).FirstOrDefaultAsync();
         }
 
         // Get CommentInfo by id
-        public async Task<CommentInfo> GetCommentInfoAsync(int id)
+        public async Task<commentInfo> GetCommentInfoAsync(int id)
         {
-            return await contextMVC.CommentInfo.Where(q => q.CommentInfoId == id).FirstOrDefaultAsync();
+            return await contextMVC.CommentInfo.Where(q => q.commentInfoId == id).FirstOrDefaultAsync();
         }
 
         // Get a ticket by TicketId
@@ -50,48 +50,48 @@ namespace MGT_Exchange.GraphQLActions
         }
 
         // Get a chat by ChatId
-        public async Task<Chat> GetChatAsync(int id)
+        public async Task<chat> GetChatAsync(int id)
         {
             return await contextMVC.Chat.FindAsync(id);
         }
 
         // Get all chats for testing only
-        public async Task<List<Chat>> GetChatsAsync()
+        public async Task<List<chat>> GetChatsAsync()
         {
             return await contextMVC.Chat.ToListAsync();
         }
 
         // Get all users for testing only
-        public async Task<List<UserApp>> GetUserAppsAsync()
+        public async Task<List<userApp>> GetUserAppsAsync()
         {
             return await contextMVC.UserApp.ToListAsync();
         }
 
         // Get all participants for testing only
-        public async Task<List<Participant>> GetParticipantsAsync()
+        public async Task<List<participant>> GetParticipantsAsync()
         {
             return await contextMVC.Participant.ToListAsync();
         }
 
-        public List<Chat> GetChats(List<int> chatIds)
+        public List<chat> GetChats(List<int> chatIds)
         {
             return (from p in contextMVC.Chat
-                    where chatIds.Contains(p.ChatId)
+                    where chatIds.Contains(p.chatId)
                     select p).ToList();
         }
 
         // Get all comments for testing only
-        public async Task<List<Comment>> GetCommentsAsync()
+        public async Task<List<comment>> GetCommentsAsync()
         {
             return await contextMVC.Comment.ToListAsync();
         }
 
         // Get Notifications by User
-        public async Task<List<Notification>> GetNotificationsByUserAsync(string toUserAppId, int take = 10)
+        public async Task<List<notification>> GetNotificationsByUserAsync(string toUserAppId, int take = 10)
         {
-            List<Notification> notifications = new List<Notification>();
+            List<notification> notifications = new List<notification>();
 
-            notifications = await contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).OrderBy(y => y.Seen).ThenByDescending(y => y.NotificationId).Take(take).ToListAsync();
+            notifications = await contextMVC.Notification.Where(x => x.toUserAppId.Equals(toUserAppId)).OrderBy(y => y.seen).ThenByDescending(y => y.notificationId).Take(take).ToListAsync();
 
             /*
             Notification notification = contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).FirstOrDefault();
@@ -105,44 +105,16 @@ namespace MGT_Exchange.GraphQLActions
         }
 
         // Get Chats by User
-        public async Task<List<Chat>> GetChatsByUserAsync(string userAppId, int take = 10)
+        public async Task<List<chat>> GetChatsByUserAsync(string userAppId, int take = 10)
         {
-            // List<Chat> chats = new List<Chat>();
 
-            /*
-            Chat chatDb = await contextMVC.Chat
-                        .Where(x => x.ChatId == input.Comment.ChatId)
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(input.Comment.UserAppId)))
-                        .Include(o => o.Participants)
-                        //.ThenInclude(i => i.User)                        
-                        .FirstOrDefaultAsync();
-                        */
-
-            List<Chat> chats = await contextMVC.Chat
-                        .Where(x => x.Participants.Any(y => y.UserAppId.Equals(userAppId)))
-                        .OrderByDescending(x => x.UpdatedAt)
+            List<chat> chats = await contextMVC.Chat
+                        .Where(x => x.participants.Any(y => y.userAppId.Equals(userAppId)))
+                        .OrderByDescending(x => x.updatedAt)
                         .Take(take)
                         .ToListAsync();
 
             return chats;
-
-            /*
-            var query = from user in contextMVC.Chat
-                        select user;
-                        
-
-
-            notifications = await contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).OrderBy(y => y.Seen).ThenByDescending(y => y.NotificationId).Take(take).ToListAsync();
-
-            /*
-            Notification notification = contextMVC.Notification.Where(x => x.ToUserAppId.Equals(toUserAppId)).FirstOrDefault();
-            notification.Seen = true;
-
-            contextMVC.Notification.Update(notification);
-            await contextMVC.SaveChangesAsync();
-            */
-
-            // return notifications;
         }
 
     }// public class GraphQLQuery
@@ -228,7 +200,7 @@ namespace MGT_Exchange.GraphQLActions
             descriptor.Field(t => t.GetChatsByUserAsync(default, default))
                 .Type<ListType<ChatType>>()
                 .Argument("userAppId", a => a.Type<NonNullType<StringType>>())
-                .Argument("take", a => a.Type<IntType>())
+                .Argument("take", a => a.Type<NonNullType<IntType>>())
                 .Name("chatsByUser")
                 ;
 

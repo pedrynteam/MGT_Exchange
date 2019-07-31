@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.GraphQLActions.Resources
 {
-    public class UserAppDataLoader : DataLoaderBase<string, UserApp>
+    public class UserAppDataLoader : DataLoaderBase<string, userApp>
     {
         private readonly MVCDbContext _context;
 
@@ -22,7 +22,7 @@ namespace MGT_Exchange.GraphQLActions.Resources
             _context = context;
         }
 
-        public virtual IReadOnlyList<UserApp> Lines
+        public virtual IReadOnlyList<userApp> Lines
         {
             get { return _context.UserApp.ToList(); }
         }
@@ -34,18 +34,18 @@ namespace MGT_Exchange.GraphQLActions.Resources
         }
         */
 
-        public Task<UserApp> GetPerson(string id, IResolverContext context)
+        public Task<userApp> GetPerson(string id, IResolverContext context)
         {
             
-            return context.BatchDataLoader<string, UserApp>("personByIdBatch", async keys => await _context.UserApp.ToDictionaryAsync(mc => mc.UserAppId) ).LoadAsync(id);
+            return context.BatchDataLoader<string, userApp>("personByIdBatch", async keys => await _context.UserApp.ToDictionaryAsync(mc => mc.userAppId) ).LoadAsync(id);
         }
 
-        protected override async Task<IReadOnlyList<Result<UserApp>>> FetchAsync(
+        protected override async Task<IReadOnlyList<Result<userApp>>> FetchAsync(
                     IReadOnlyList<string> keys,
                     CancellationToken cancellationToken)
         {
-            List<GreenDonut.Result<UserApp>> te = new List<Result<UserApp>>();
-            Result<UserApp> uno = await _context.UserApp.FirstOrDefaultAsync();
+            List<GreenDonut.Result<userApp>> te = new List<Result<userApp>>();
+            Result<userApp> uno = await _context.UserApp.FirstOrDefaultAsync();
             te.Add(uno);
 
             //List<Result<UserApp>> dos = await _context.UserApp.ToListAsync();

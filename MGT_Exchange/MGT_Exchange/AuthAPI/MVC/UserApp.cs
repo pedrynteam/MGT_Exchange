@@ -10,54 +10,34 @@ using System.Threading.Tasks;
 namespace MGT_Exchange.AuthAPI.MVC
 {
 
-    public class UserApp
+    public class userApp
     {        
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public string UserAppId { get; set; }
+        public string userAppId { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public int id { get; set; }
 
-        public string LoginTokenId { get; set; } // Use it to Identify 
+        public string loginTokenId { get; set; } // Use it to Identify 
 
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string UserName { get; set; }
-        public string Nickname { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string TokenAuth { get; set; }
+        public string firstName { get; set; }
+        public string lastName { get; set; }
+        public string userName { get; set; }
+        public string nickname { get; set; }
+        public string email { get; set; }
+        public string password { get; set; }
+        public string tokenAuth { get; set; }
 
-        public DateTime LastSeen { get; set; }
+        public DateTime lastSeen { get; set; }
 
-        public bool Active { get; set; } // To know that the user is Active or not. So dont send him notifications, messages, etc, etc.
-
-        // 1 to 1 - Steven Sandersons
-        public string CompanyId { get; set; }
-        [ForeignKey("CompanyId")]
-        [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual Company Company { get; set; }
-    }
-    
-    /*
-    public class UserApp
-    {
-        [Key]
-        public int UserAppId { get; set; }
-
-        public string Id { get; set; }
-        public string UserName { get; set; }
-        public string Nickname { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string TokenAuth { get; set; }
+        public bool active { get; set; } // To know that the user is Active or not. So dont send him notifications, messages, etc, etc.
 
         // 1 to 1 - Steven Sandersons
-        public string CompanyId { get; set; }
-        [ForeignKey("CompanyId")]
+        public string companyId { get; set; }
+        [ForeignKey("companyId")]
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
-        public virtual Company Company { get; set; }
+        public virtual company company { get; set; }
     }
-    */
+        
 }

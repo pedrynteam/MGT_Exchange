@@ -60,9 +60,9 @@ namespace MGT_Exchange.Models
             //base.OnModelCreating(modelBuilder);
 
             // To ignore the id to be ignored since that columns is not a Key
-            modelBuilder.Entity<Company>().Property(x => x.Id).Metadata.AfterSaveBehavior = Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore;
+            modelBuilder.Entity<company>().Property(x => x.id).Metadata.AfterSaveBehavior = Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore;
 
-            modelBuilder.Entity<UserApp>().Property(x => x.Id).Metadata.AfterSaveBehavior = Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore;
+            modelBuilder.Entity<userApp>().Property(x => x.id).Metadata.AfterSaveBehavior = Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore;
 
             //model
             /*
@@ -123,15 +123,15 @@ namespace MGT_Exchange.Models
 
         public DbSet<MGT_Exchange.TicketAPI.MVC.CommentTicket> CommentTicket { get; set; }
 
-        public DbSet<MGT_Exchange.ChatAPI.MVC.Chat> Chat { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.chat> Chat { get; set; }
         public DbSet<MGT_Exchange.ChatAPI.MVC.ChatKind> ChatKind { get; set; }
         public DbSet<MGT_Exchange.ChatAPI.MVC.ChatStatus> ChatStatus { get; set; }
-        public DbSet<MGT_Exchange.ChatAPI.MVC.Comment> Comment { get; set; }        
-        public DbSet<MGT_Exchange.ChatAPI.MVC.Participant> Participant { get; set; }
-        public DbSet<MGT_Exchange.AuthAPI.MVC.UserApp> UserApp { get; set; }
-        public DbSet<MGT_Exchange.AuthAPI.MVC.Company> Company { get; set; }
-        public DbSet<MGT_Exchange.ChatAPI.MVC.CommentInfo> CommentInfo { get; set; }
-        public DbSet<MGT_Exchange.ChatAPI.MVC.Notification> Notification { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.comment> Comment { get; set; }        
+        public DbSet<MGT_Exchange.ChatAPI.MVC.participant> Participant { get; set; }
+        public DbSet<MGT_Exchange.AuthAPI.MVC.userApp> UserApp { get; set; }
+        public DbSet<MGT_Exchange.AuthAPI.MVC.company> Company { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.commentInfo> CommentInfo { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.notification> Notification { get; set; }
 
     }
 }

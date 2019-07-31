@@ -29,7 +29,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateTokenTxn_Output
     {
-        public ResultConfirmation resultConfirmation { get; set; }
+        public resultConfirmation resultConfirmation { get; set; }
         public String token { get; set; } // This will contain the token created if everything goes ok
     }
 
@@ -48,7 +48,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
         public async Task<CreateTokenTxn_Output> Execute(CreateTokenTxn_Input input, IServiceProvider serviceProvider, ApplicationDbContext contextFather = null, bool autoCommit = true)
         {
             CreateTokenTxn_Output _output = new CreateTokenTxn_Output();
-            _output.resultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            _output.resultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -73,7 +73,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                     if (user == null)
                     {
                         error = true;
-                        _output.resultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "USER_NOT_FOUND_ERROR", _ResultDetail: input.userAppId); // If Error
+                        _output.resultConfirmation = resultConfirmation.resultBad(_ResultMessage: "USER_NOT_FOUND_ERROR", _ResultDetail: input.userAppId); // If Error
                     }
 
                     if (!error)
@@ -115,7 +115,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        _output.resultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "TOKEN_SUCESSFULLY_CREATED"); // If OK
+                        _output.resultConfirmation = resultConfirmation.resultGood(_ResultMessage: "TOKEN_SUCESSFULLY_CREATED"); // If OK
                         _output.token = tokenString; // The token
                     }// if (!error)
                 }
@@ -134,7 +134,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 _output = new CreateTokenTxn_Output(); // Restart variable to avoid returning any already saved data
-                _output.resultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                _output.resultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

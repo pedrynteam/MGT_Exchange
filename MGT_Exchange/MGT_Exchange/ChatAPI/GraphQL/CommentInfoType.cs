@@ -14,21 +14,21 @@ using System.Threading.Tasks;
 namespace MGT_Exchange.ChatAPI.GraphQL
 {
 
-    public class CommentInfoType : ObjectType<CommentInfo>
+    public class CommentInfoType : ObjectType<commentInfo>
     {
-        protected override void Configure(IObjectTypeDescriptor<CommentInfo> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<commentInfo> descriptor)
         {
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.DeliveredAt)
+            descriptor.Field(t => t.deliveredAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.SeenAt)
+            descriptor.Field(t => t.seenAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.User)    
+            descriptor.Field(t => t.user)    
                 .Type<UserAppType>()
                 .Resolver(async context =>
                 {
@@ -38,17 +38,17 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                      * WHERE [q].[UserAppId] IN (N'41bb2122-0eb9-4f28-a75c-65f008d150d3', N'0752a9ae-efc4-43fb-a712-66f39bf87c85', N'008c4bd8-0280-47ac-8e9c-048eec043b6e')
                      * ORDER BY [q].[UserAppId]
                      */
-                    IDataLoader<string, UserApp> dataLoader = context.BatchDataLoader<string, UserApp>(
+                    IDataLoader<string, userApp> dataLoader = context.BatchDataLoader<string, userApp>(
                     "CommentInfoUserById",
                     async keys => {                        
                         return await context.Service<MVCDbContext>().UserApp                        
-                        .Where(q => keys.Contains(q.UserAppId))
-                        .GroupBy(g => g.UserAppId)
+                        .Where(q => keys.Contains(q.userAppId))
+                        .GroupBy(g => g.userAppId)
                         .ToDictionaryAsync(d => d.Key, d => d.FirstOrDefault());
                     }
                     );
 
-                    return await dataLoader.LoadAsync(context.Parent<CommentInfo>().UserAppId);
+                    return await dataLoader.LoadAsync(context.Parent<commentInfo>().userAppId);
                 });
 
         }
@@ -56,18 +56,18 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
     // Leave it empty, HotChocolate will take care of it. 
     // but sometimes where there is data involved we need to create a transaction to use the input type, so the schema should know it. Error: CommentInfoInput.deliveredAt: Cannot resolve input-type `System.Nullable<System.DateTime>` - Type: CommentInfoInput
-    public class CommentInfoInputType : InputObjectType<CommentInfo>
+    public class CommentInfoInputType : InputObjectType<commentInfo>
     {
-        protected override void Configure(IInputObjectTypeDescriptor<CommentInfo> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<commentInfo> descriptor)
         {
 
-            descriptor.Field(t => t.CreatedAt)
+            descriptor.Field(t => t.createdAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.DeliveredAt)
+            descriptor.Field(t => t.deliveredAt)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.SeenAt)
+            descriptor.Field(t => t.seenAt)
                 .Type<DateTimeType>();
         }
     }

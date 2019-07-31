@@ -11,18 +11,18 @@ using System.Threading.Tasks;
 
 namespace MGT_Exchange.AuthAPI.GraphQL
 {
-    public class UserAppType : ObjectType<UserApp>
+    public class UserAppType : ObjectType<userApp>
     {
-        protected override void Configure(IObjectTypeDescriptor<UserApp> descriptor)
+        protected override void Configure(IObjectTypeDescriptor<userApp> descriptor)
         {
 
-            descriptor.Field(t => t.Company)
+            descriptor.Field(t => t.company)
     .Type<CompanyType>()
     .Name("company")
     .Resolver(context =>
     {
 
-        return context.Service<MVCDbContext>().Company.Where(x => x.CompanyId.Equals(context.Parent<Company>().CompanyId)).FirstOrDefault();
+        return context.Service<MVCDbContext>().Company.Where(x => x.companyId.Equals(context.Parent<company>().companyId)).FirstOrDefault();
     }
     )
     ;
@@ -30,18 +30,18 @@ namespace MGT_Exchange.AuthAPI.GraphQL
     }
 
     // Leave it empty, HotChocolate will take care of it
-    public class UserAppInputType : InputObjectType<UserApp>
+    public class UserAppInputType : InputObjectType<userApp>
     {
         
-        protected override void Configure(IInputObjectTypeDescriptor<UserApp> descriptor)
+        protected override void Configure(IInputObjectTypeDescriptor<userApp> descriptor)
         {
-            descriptor.Field(t => t.LastSeen)
+            descriptor.Field(t => t.lastSeen)
                 .Type<DateTimeType>();
 
-            descriptor.Field(t => t.Id)
+            descriptor.Field(t => t.id)
                 .Ignore();
 
-            descriptor.Field(t => t.Active)
+            descriptor.Field(t => t.active)
                 .Ignore();
         }
     }

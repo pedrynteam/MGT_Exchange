@@ -16,7 +16,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class AddCommentInfoToCommentTxn_Input
     {
-        public CommentInfo CommentInfo { get; set; }
+        public commentInfo CommentInfo { get; set; }
     }
 
     public class AddCommentInfoToCommentTxn_InputType : InputObjectType<AddCommentInfoToCommentTxn_Input>
@@ -31,8 +31,8 @@ namespace MGT_Exchange.ChatAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class AddCommentInfoToCommentTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public CommentInfo CommentInfo { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public commentInfo CommentInfo { get; set; }
     }
 
     public class AddCommentInfoToCommentTxn_OutputType : ObjectType<AddCommentInfoToCommentTxn_Output>
@@ -51,7 +51,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         public async Task<AddCommentInfoToCommentTxn_Output> Execute(AddCommentInfoToCommentTxn_Input input, MVCDbContext contextFather = null, bool autoCommit = true, IEventSender eventSender = null)
         {
             AddCommentInfoToCommentTxn_Output output = new AddCommentInfoToCommentTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             // Error handling
             bool error = false; // To Handle Only One Error
@@ -74,7 +74,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** 1. Create the Comment (Atomic because is same Context DB)
 
                         // Create the Chat To Save
-                        input.CommentInfo.CommentInfoId = 0;                                                
+                        input.CommentInfo.commentInfoId = 0;                                                
 
                         // Save the chat to the context
                         contextMGT.CommentInfo.Add(input.CommentInfo);
@@ -90,7 +90,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                         //***** If this task fails, there are options -> 1. Retry multiple times 2. Save the event as Delay, 3.Rollback Database, Re
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMMENT_SUCESSFULLY_CREATED"); // If OK                        
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "COMMENT_SUCESSFULLY_CREATED"); // If OK                        
                         output.CommentInfo = input.CommentInfo;
                     }// if (!error)
 
@@ -115,7 +115,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new AddCommentInfoToCommentTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {

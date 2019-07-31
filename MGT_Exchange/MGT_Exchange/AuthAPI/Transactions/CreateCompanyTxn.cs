@@ -22,7 +22,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 1. Create Model: Input type is used for Mutation, it should be included if needed
     public class CreateCompanyTxn_Input
     {
-        public Company Company { get; set; }
+        public company Company { get; set; }
     }
 
     public class CreateCompanyTxn_InputType : InputObjectType<CreateCompanyTxn_Input>
@@ -37,8 +37,8 @@ namespace MGT_Exchange.AuthAPI.Transactions
     // 2. Create Model: Output type is used for Mutation, it should be included if needed
     public class CreateCompanyTxn_Output
     {
-        public ResultConfirmation ResultConfirmation { get; set; }
-        public Company Company { get; set; }
+        public resultConfirmation ResultConfirmation { get; set; }
+        public company Company { get; set; }
     }
 
     public class CreateCompanyTxn_OutputType : ObjectType<CreateCompanyTxn_Output>
@@ -57,7 +57,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
         public async Task<CreateCompanyTxn_Output> Execute(CreateCompanyTxn_Input input, IServiceProvider serviceProvider, MVCDbContext contextFatherMVC = null, ApplicationDbContext contextFatherApp = null, bool autoCommit = true)
         {
             CreateCompanyTxn_Output output = new CreateCompanyTxn_Output();
-            output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
+            output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "TXN_NOT_STARTED");
 
             String userType = "Company";
 
@@ -80,21 +80,21 @@ namespace MGT_Exchange.AuthAPI.Transactions
 
                     UserManager<IdentityUser> _userManager = serviceProvider.GetService<UserManager<IdentityUser>>();
 
-                    var user = new IdentityUser { UserName = input.Company.Name, Email = input.Company.Email, PasswordHash = input.Company.Password };
+                    var user = new IdentityUser { UserName = input.Company.name, Email = input.Company.email, PasswordHash = input.Company.password };
                     var result = await _userManager.CreateAsync(user);
 
                     if (!result.Succeeded)
                     {
                         error = true;
-                        output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "COMPANY_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
-                        List<ItemKey> resultKeys = new List<ItemKey>();
+                        output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "COMPANY_NOT_CREATED_ERROR", _ResultDetail: result.Errors.FirstOrDefault().Description); // If OK  
+                        List<itemKey> resultKeys = new List<itemKey>();
 
                         foreach (var errorDesc in result.Errors)
                         {
-                            resultKeys.Add(new ItemKey(errorDesc.Code, errorDesc.Description));
+                            resultKeys.Add(new itemKey(errorDesc.Code, errorDesc.Description));
                         }
 
-                        output.ResultConfirmation.ResultDictionary = resultKeys;
+                        output.ResultConfirmation.resultDictionary = resultKeys;
 
                     }
 
@@ -114,14 +114,14 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         var tokenString = "";
                         CreateTokenTxn_Input createTokenTxn_Input = new CreateTokenTxn_Input { userAppId = user.Id };
                         CreateTokenTxn_Output createTokenTxn = await new GraphQLMutation().CreateTokenTxn(input: createTokenTxn_Input, serviceProvider: serviceProvider);
-                        if (createTokenTxn.resultConfirmation.ResultPassed)
+                        if (createTokenTxn.resultConfirmation.resultPassed)
                         {
                             tokenString = createTokenTxn.token;
                         }
 
-                        input.Company.CompanyId = user.Id;
-                        input.Company.Password = "";
-                        input.Company.TokenAuth = tokenString;                         
+                        input.Company.companyId = user.Id;
+                        input.Company.password = "";
+                        input.Company.tokenAuth = tokenString;                         
 
                         contextMVC.Company.Add(input.Company);
 
@@ -140,7 +140,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         {
                             if (!error)
                             {
-                                input.Company.LoginTokenId = LoginTokenFunction.CreateTokenId(input.Company.Id, DateTime.UtcNow);
+                                input.Company.loginTokenId = LoginTokenFunction.CreateTokenId(input.Company.id, DateTime.UtcNow);
                                 contextMVC.Company.Update(input.Company);
                                 await contextMVC.SaveChangesAsync();
                             }
@@ -151,7 +151,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                         }
 
                         //***** 6. Confirm the Result (Pass | Fail) If gets to here there are not errors then return the new data from database
-                        output.ResultConfirmation = ResultConfirmation.resultGood(_ResultMessage: "COMPANY_SUCESSFULLY_CREATED"); // If OK
+                        output.ResultConfirmation = resultConfirmation.resultGood(_ResultMessage: "COMPANY_SUCESSFULLY_CREATED"); // If OK
                         //output.token = tokenString; // The token                        
                         output.Company = input.Company;
                     }// if (!error)
@@ -175,7 +175,7 @@ namespace MGT_Exchange.AuthAPI.Transactions
                 string innerError = (ex.InnerException != null) ? ex.InnerException.Message : "";
                 System.Diagnostics.Debug.WriteLine("Error Inner: " + innerError);
                 output = new CreateCompanyTxn_Output(); // Restart variable to avoid returning any already saved data
-                output.ResultConfirmation = ResultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
+                output.ResultConfirmation = resultConfirmation.resultBad(_ResultMessage: "EXCEPTION", _ResultDetail: ex.Message);
             }
             finally
             {
