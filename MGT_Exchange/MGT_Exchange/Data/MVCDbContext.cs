@@ -17,7 +17,7 @@ namespace MGT_Exchange.Models
         public MVCDbContext (DbContextOptions<MVCDbContext> options)
             : base(options)
         {
-            
+           
              /*Database.EnsureDeleted();
             _created = false; // */
 
@@ -132,6 +132,8 @@ namespace MGT_Exchange.Models
         public DbSet<MGT_Exchange.AuthAPI.MVC.company> Company { get; set; }
         public DbSet<MGT_Exchange.ChatAPI.MVC.commentInfo> CommentInfo { get; set; }
         public DbSet<MGT_Exchange.ChatAPI.MVC.notification> Notification { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.department> Department { get; set; }
+        public DbSet<MGT_Exchange.ChatAPI.MVC.groupof> Group { get; set; }
 
     }
 }

@@ -30,7 +30,7 @@ namespace MGT_Exchange.ChatAPI.GraphQL
                 .Type<ChatType>()
                 .Name("chat")
                 .Resolver(context => context.Service<MVCDbContext>().Chat.FindAsync(context.Parent<comment>().chatId))
-                ;
+                ;            
 
             descriptor.Field(t => t.seenByAll)
                 .Type<BooleanType>()
@@ -247,7 +247,8 @@ namespace MGT_Exchange.ChatAPI.GraphQL
     {
         protected override void Configure(IInputObjectTypeDescriptor<comment> descriptor)
         {
-
+            descriptor.Field(t => t.seenByAll)
+                .Ignore();
 
         }
     }

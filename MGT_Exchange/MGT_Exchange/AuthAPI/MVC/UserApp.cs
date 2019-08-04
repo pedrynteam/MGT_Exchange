@@ -25,6 +25,8 @@ namespace MGT_Exchange.AuthAPI.MVC
         public string lastName { get; set; }
         public string userName { get; set; }
         public string nickname { get; set; }
+        public string alias { get; set; } // htr003 - For name duplications
+        
         public string email { get; set; }
         public string password { get; set; }
         public string tokenAuth { get; set; }
@@ -38,6 +40,16 @@ namespace MGT_Exchange.AuthAPI.MVC
         [ForeignKey("companyId")]
         [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
         public virtual company company { get; set; }
+
+        // 1 to 1 - Steven Sandersons
+        public int? departmentId { get; set; }
+        [ForeignKey("departmentId")]
+        [JsonIgnore] // To avoid circular calls. Customer -> Order -> Customer -> Order
+        public virtual department department { get; set; }
+
+        // 1 to Many - Steven Sandersons
+        public virtual List<groupof> groups { get; set; }
+
     }
         
 }

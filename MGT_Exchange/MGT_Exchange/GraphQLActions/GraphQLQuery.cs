@@ -144,7 +144,7 @@ namespace MGT_Exchange.GraphQLActions
                 .Type<ChatType>()    
                 .Argument("id", a => a.Type<NonNullType<IntType>>())    
                 .Name("chat")
-                .Directive(new AuthorizeDirective()) // This is like Authenticated only
+                //.Directive(new AuthorizeDirective()) // This is like Authenticated only
             //.Authorize(policy: "OnlyManagersDb") // This is using a policy
             ;
 

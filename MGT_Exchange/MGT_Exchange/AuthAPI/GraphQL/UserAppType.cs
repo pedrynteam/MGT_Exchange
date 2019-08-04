@@ -22,7 +22,8 @@ namespace MGT_Exchange.AuthAPI.GraphQL
     .Resolver(context =>
     {
 
-        return context.Service<MVCDbContext>().Company.Where(x => x.companyId.Equals(context.Parent<company>().companyId)).FirstOrDefault();
+        //return context.Service<MVCDbContext>().Company.Where(x => x.companyId.Equals(context.Parent<company>().companyId)).FirstOrDefault();
+        return context.Service<MVCDbContext>().Company.Where(x => x.companyId == context.Parent<company>().companyId).FirstAsync();
     }
     )
     ;

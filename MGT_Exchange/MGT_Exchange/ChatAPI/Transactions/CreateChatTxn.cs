@@ -24,7 +24,7 @@ namespace MGT_Exchange.ChatAPI.Transactions
         protected override void Configure(IInputObjectTypeDescriptor<CreateChatTxn_Input> descriptor)
         {
             descriptor.Field(t => t.Chat)
-                .Type<ChatInputType>();
+                .Type<ChatInputType>();            
         }
     }
 

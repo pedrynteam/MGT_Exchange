@@ -33,6 +33,9 @@ namespace MGT_Exchange.ChatAPI.GraphQL
 
             descriptor.Field(t => t.closedAt)
                          .Type<DateTimeType>();
+
+            
+
             /*
             descriptor.Field(t => t.CommentsInChat)
                 .Type<IntType>()
